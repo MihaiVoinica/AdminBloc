@@ -1,0 +1,19 @@
+{
+  "name": "adminbloc",
+  "version": "1.0.0",
+  "author": "Mihai-Virgil Voinica",
+  "description": "",
+  "scripts": {
+    "database": "mongod --dbpath ./database > /dev/null 2>&1",
+    "client": "npm start --prefix client",
+    "client-install": "npm install --prefix client",
+    "server": "npm start --prefix server",
+    "server-install": "npm install --prefix server",
+    "no-client": "concurrently \"npm run database\" \"npm run server\"",
+    "start": "concurrently \"npm run database\" \"npm run server\" \"npm run client\"",
+    "postinstall": "concurrently \"npm run server-install\" \"npm run client-install\""
+  },
+  "devDependencies": {
+    "concurrently": "^6.2.0"
+  }
+}
