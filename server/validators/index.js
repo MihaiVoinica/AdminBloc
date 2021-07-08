@@ -1,9 +1,7 @@
-const validateActivateUserInput = require("./activate-user");
-const validateLoginInput = require("./login");
-const validateRegisterInput = require("./register");
+const apartments = require("./apartments");
+const auth = require("./auth");
 
 module.exports = {
-  validateActivateUserInput,
-  validateLoginInput,
-  validateRegisterInput,
+  ...apartments,
+  ...auth,
 };

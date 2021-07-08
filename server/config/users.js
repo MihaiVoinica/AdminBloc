@@ -1,12 +1,12 @@
 const ROLES = {
-  SUPER_ADMIN: "superadmin",
+  SUPERADMIN: "superadmin",
   ADMIN: "admin",
   NORMAL: "normal",
 };
 
 const CAN_CREATE_ROLES = {
-  [ROLES.SUPER_ADMIN]: ROLES.ADMIN,
-  [ROLES.ADMIN]: ROLES.NORMAL,
+  [ROLES.SUPERADMIN]: [ROLES.ADMIN, ROLES.ADMIN.SUPERADMIN],
+  [ROLES.ADMIN]: [ROLES.NORMAL],
 };
 
 module.exports = {

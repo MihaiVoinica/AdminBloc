@@ -30,7 +30,7 @@ const { Users } = require("../schemas");
 router.get("/validate-user/:token", async (req, res) => {
   const { token } = req.params;
 
-  // Check validation
+  // Check required params
   if (!token) {
     return res.status(400).json({ msg: "Token is required" });
   }
@@ -170,7 +170,7 @@ router.post("/activate-user/:token", async (req, res) => {
 
 // @route POST /auth/register
 // @desc register and create token for a user
-// @access Private
+// @access Private [specific]
 router.post("/register", checkToken, async (req, res) => {
   const requestingUser = req.user;
   const data = req.body;
@@ -178,7 +178,8 @@ router.post("/register", checkToken, async (req, res) => {
   // Check requesting user role
   if (
     !requestingUser.role ||
-    requestingUser.role === usersConfig.ROLES.NORMAL
+    !usersConfig.CAN_CREATE_ROLES[requestingUser.role] ||
+    usersConfig.CAN_CREATE_ROLES[requestingUser.role].length <= 0
   ) {
     return res.status(403).json({ msg: "User doesn't have enough rights" });
   }
@@ -191,7 +192,11 @@ router.post("/register", checkToken, async (req, res) => {
     return res.status(400).json(errors);
   }
 
-  const { name, email } = data;
+  const {
+    name,
+    email,
+    role = usersConfig.CAN_CREATE_ROLES[requestingUser.role][0],
+  } = data;
 
   try {
     const user = await Users.findOne({ email });
@@ -206,7 +211,6 @@ router.post("/register", checkToken, async (req, res) => {
       type: "alphanumeric",
     });
     const activationPin = cryptoRandomString({ length: 6, type: "numeric" });
-    const role = usersConfig.CAN_CREATE_ROLES[requestingUser.role];
 
     // Create user
     await Users.create({

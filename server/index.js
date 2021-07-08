@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 // config
 const { serverConfig, usersConfig, secrets } = require("./config");
@@ -41,13 +42,28 @@ mongoose
           name: secrets.SUPER_ADMIN_DEFAULTS.NAME,
           email: secrets.SUPER_ADMIN_DEFAULTS.EMAIL,
           password: hash,
-          role: usersConfig.ROLES.SUPER_ADMIN,
+          role: usersConfig.ROLES.SUPERADMIN,
         });
 
         console.log(
           `${serverConfig.LOGGER_PREFIX}[CREATE SUPERADMIN] Successfully created {${user._id}}`
         );
       }
+
+      // TODO: remove this
+      const user = await Users.findOne({ role: usersConfig.ROLES.SUPERADMIN });
+      const jwtToken = await jwt.sign(
+        {
+          id: user._id,
+          email: user.email,
+          role: user.role,
+        },
+        secrets.JWT_SECRET,
+        {
+          expiresIn: serverConfig.TOKEN_EXPIRY_TIME,
+        }
+      );
+      console.log(`${serverConfig.LOGGER_PREFIX}[TOKEN]:${jwtToken}`);
     } catch (e) {
       console.log(
         `${serverConfig.LOGGER_PREFIX}[CREATE ERROR] Could NOT create SuperAdmin user`,
@@ -60,6 +76,7 @@ mongoose
   );
 
 // Routes
+app.use("/apartments", router.apartments);
 app.use("/auth", router.auth);
 
 // Server init
