@@ -106,12 +106,12 @@ const Apartments = React.memo((props) => {
               )}
             </td>
             <td>{peopleCount}</td>
-            <td>{totalArea}m2</td>
-            <td>{radiantArea}m2</td>
+            <td>{totalArea} m&sup2;</td>
+            <td>{radiantArea} m&sup2;</td>
             <td>{share}</td>
             <td>{thermalProvider ? "Da" : "Nu"}</td>
-            <td>{remainingCost}RON</td>
-            <td>{currentCost}RON</td>
+            <td>{remainingCost} RON</td>
+            <td>{currentCost} RON</td>
             <td className="text-center">
               <Button
                 disabled={loading}

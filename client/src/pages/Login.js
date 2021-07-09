@@ -13,6 +13,7 @@ import {
   Button,
   Card,
 } from "reactstrap";
+import { toast } from "react-toastify";
 import axios from "axios";
 // Utils
 import { login } from "../utils";
@@ -45,9 +46,13 @@ const Login = React.memo((props) => {
         .catch((err) => {
           const { response = {} } = err;
           const { data = {} } = response;
-          const { email, password } = data;
+          const { email, password, msg } = data;
           setLoading(false);
-          setErrors({ email, password });
+          if (msg) {
+            toast.error(msg);
+          } else {
+            setErrors({ email, password });
+          }
         });
     },
     [history, fields]

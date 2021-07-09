@@ -88,12 +88,16 @@ router.post("/login", async (req, res) => {
   const { email, password } = data;
 
   try {
-    const user = await Users.findOne({ email });
+    const user = await Users.findOne({ email, active: true });
 
     if (!user) {
       return res.status(400).json({
         email: "Invalid email or password",
         password: "Invalid email or password",
+      });
+    } else if (user.blocked) {
+      return res.status(400).json({
+        msg: "User is blocked, please check your email and activate this user",
       });
     }
 
@@ -219,6 +223,7 @@ router.post("/register", checkToken, async (req, res) => {
   }
 
   const { name, email, role, apartmentId } = data;
+  const userRole = role || userCanCreateRoles[0];
 
   try {
     const user = await Users.findOne({ email });
@@ -253,7 +258,7 @@ router.post("/register", checkToken, async (req, res) => {
       email,
       activationToken,
       activationPin,
-      role: role || userCanCreateRoles[0],
+      role: userRole,
       blocked: true,
     });
 
@@ -272,7 +277,7 @@ router.post("/register", checkToken, async (req, res) => {
     const message = {
       to: "mihaivoinica@gmail.com",
       subject: "[test email] Licenta",
-      html: `<h1>Utilizator [nume: ${name}] [email: ${email}] [rol: ${role}] a fost creat</h1><br/><p>Pentru activarea lui accesati urmatorul <a href="http://localhost:3000/activate-user/${activationToken}">link</a>.</p><p>Apoi introduceti PIN-ul format din 6 cifre <b>${activationPin}</b> si noua dvs parola.</p>`,
+      html: `<h1>Utilizator [nume: ${name}] [email: ${email}] [rol: ${userRole}] a fost creat</h1><br/><p>Pentru activarea lui accesati urmatorul <a href="http://localhost:3000/activate-user/${activationToken}">link</a>.</p><p>Apoi introduceti PIN-ul format din 6 cifre <b>${activationPin}</b> si noua dvs parola.</p>`,
     };
     await nodemailerTransporter.sendMail(message);
 
