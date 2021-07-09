@@ -5,8 +5,8 @@ module.exports = function validateAssignOwnerInput(data) {
   let errors = {};
 
   // Fields checks
-  if (Validator.isEmpty(String(data.userId || ""))) {
-    errors.userId = "UserId field is required";
+  if (Validator.isEmpty(String(data.email || ""))) {
+    errors.email = "Email field is required";
   }
 
   return {

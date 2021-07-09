@@ -68,7 +68,7 @@ const ApartmentSchema = new Schema(
     },
     pastUserIds: {
       // the user that owns the apartment
-      type: ObjectId,
+      type: [ObjectId],
       required: false,
       default: [],
       ref: "users",

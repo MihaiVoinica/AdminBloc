@@ -15,7 +15,7 @@ const BillSchema = new Schema(
     },
     value: {
       type: Number,
-      default: true,
+      required: true,
     },
     active: {
       type: Boolean,

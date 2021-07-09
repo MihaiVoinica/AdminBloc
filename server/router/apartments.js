@@ -9,6 +9,7 @@ const router = express.Router();
 // validators
 const {
   validateCreateApartmentInput,
+  validateUpdateApartmentInput,
   validateAssignOwnerInput,
   validateRemoveOwnerInput,
   validateCreateMeterInput,
@@ -21,6 +22,41 @@ const { Apartments } = require("../schemas");
 
 // roles
 const { NORMAL, ADMIN, SUPERADMIN } = usersConfig.ROLES;
+
+// @route GET /apartments/create
+// @desc
+// @access Private [SUPERADMIN, ADMIN, NORMAL]
+router.get("/get", checkToken, async (req, res) => {
+  const userAccess = [SUPERADMIN, ADMIN, NORMAL];
+  const requestingUserRole = (req.user || {}).role;
+  const data = req.query;
+
+  // Check requesting user role
+  if (!requestingUserRole || !userAccess.includes(requestingUserRole)) {
+    return res.status(403).json({ msg: "User doesn't have enough rights" });
+  }
+
+  const { id } = data;
+
+  if (!id) {
+    return res.status(400).json({ msg: "Id is required" });
+  }
+
+  try {
+    // TODO: find building before get
+    // TODO: check requesting user has rights on the specific building
+
+    const apartment = await Apartments.findOne({
+      _id: id,
+      active: true,
+    });
+
+    res.status(200).json(apartment);
+  } catch (e) {
+    console.log("[/apartments/get] ERROR:", e);
+    res.status(500).json(e);
+  }
+});
 
 // @route POST /apartments/create
 // @desc
@@ -74,13 +110,100 @@ router.post("/create", checkToken, async (req, res) => {
   }
 });
 
+// @route POST /apartments/update/:apartmentId
+// @desc
+// @access Private [SUPERADMIN, ADMIN]
+router.post("/update/:apartmentId", checkToken, async (req, res) => {
+  const userAccess = [SUPERADMIN, ADMIN];
+  const requestingUserRole = (req.user || {}).role;
+  const { apartmentId } = req.params;
+  const data = req.body;
+
+  // Check requesting user role
+  if (!requestingUserRole || !userAccess.includes(requestingUserRole)) {
+    return res.status(403).json({ msg: "User doesn't have enough rights" });
+  }
+
+  // Form validation
+  const { errors, isValid } = validateUpdateApartmentInput(data);
+
+  // Check validation
+  if (!isValid) {
+    return res.status(400).json(errors);
+  }
+
+  const {
+    buildingId,
+    number,
+    peopleCount,
+    totalArea,
+    radiantArea,
+    share,
+    thermalProvider,
+  } = data;
+
+  try {
+    // TODO: find building before update
+    // TODO: check requesting user has rights on the specific building
+
+    const apartment = await Apartments.findOneAndUpdate(
+      { _id: apartmentId, active: true },
+      {
+        buildingId,
+        number,
+        peopleCount,
+        totalArea,
+        radiantArea,
+        share,
+        thermalProvider,
+      },
+      { new: true }
+    );
+
+    res.status(200).json(apartment);
+  } catch (e) {
+    console.log("[/apartments/update] ERROR:", e);
+    res.status(500).json(e);
+  }
+});
+
+// @route PATCH /apartments/update/:apartmentId
+// @desc
+// @access Private [SUPERADMIN, ADMIN]
+router.patch("/remove/:apartmentId", checkToken, async (req, res) => {
+  const userAccess = [SUPERADMIN, ADMIN];
+  const requestingUserRole = (req.user || {}).role;
+  const { apartmentId } = req.params;
+
+  // Check requesting user role
+  if (!requestingUserRole || !userAccess.includes(requestingUserRole)) {
+    return res.status(403).json({ msg: "User doesn't have enough rights" });
+  }
+
+  try {
+    // TODO: find building before update
+    // TODO: check requesting user has rights on the specific building
+
+    const apartment = await Apartments.findOneAndUpdate(
+      { _id: apartmentId, active: true },
+      { active: false },
+      { new: true }
+    );
+
+    res.status(200).json(apartment);
+  } catch (e) {
+    console.log("[/apartments/update] ERROR:", e);
+    res.status(500).json(e);
+  }
+});
+
 // @route PATCH /apartments/assign-owner/:apartmentId
 // @desc
 // @access Private [SUPERADMIN, ADMIN]
 router.patch("/assign-owner/:apartmentId", checkToken, async (req, res) => {
   const userAccess = [SUPERADMIN, ADMIN];
-  const { apartmentId } = req.params;
   const requestingUserRole = (req.user || {}).role;
+  const { apartmentId } = req.params;
   const data = req.body;
 
   // Check required params
@@ -101,16 +224,23 @@ router.patch("/assign-owner/:apartmentId", checkToken, async (req, res) => {
     return res.status(400).json(errors);
   }
 
-  const { userId } = data;
+  const { email } = data;
 
   try {
     // TODO: find building before create
     // TODO: check requesting user has rights on the specific building
 
-    const apartment = await Apartments.findOne({
-      _id: apartmentId,
-      active: true,
-    });
+    const [user, apartment] = await Promise.all([
+      Users.findOne({ email, active: true }),
+      Apartments.findOne({
+        _id: apartmentId,
+        active: true,
+      }),
+    ]);
+
+    if (!user) {
+      return res.status(400).json({ msg: "Invalid User" });
+    }
 
     if (!apartment) {
       return res.status(400).json({ msg: "Invalid Apartment" });
@@ -125,7 +255,7 @@ router.patch("/assign-owner/:apartmentId", checkToken, async (req, res) => {
 
     const newApartment = await Apartments.findOneAndUpdate(
       { _id: apartmentId, active: true },
-      { $set: { userId }, $pull: { pastUserIds: userId } },
+      { $set: { userId: user._id }, $pull: { pastUserIds: user._id } },
       { new: true }
     );
 
@@ -141,8 +271,8 @@ router.patch("/assign-owner/:apartmentId", checkToken, async (req, res) => {
 // @access Private [SUPERADMIN, ADMIN]
 router.patch("/remove-owner/:apartmentId", checkToken, async (req, res) => {
   const userAccess = [SUPERADMIN, ADMIN];
-  const { apartmentId } = req.params;
   const requestingUserRole = (req.user || {}).role;
+  const { apartmentId } = req.params;
   const data = req.body;
 
   // Check required params
@@ -163,15 +293,21 @@ router.patch("/remove-owner/:apartmentId", checkToken, async (req, res) => {
     return res.status(400).json(errors);
   }
 
-  const { userId } = data;
+  const { email } = data;
 
   try {
     // TODO: find building before create
     // TODO: check requesting user has rights on the specific building
 
+    const user = await Users.findOne({ email, active: true });
+
+    if (!user) {
+      return res.status(400).json({ msg: "Invalid Email" });
+    }
+
     const apartment = await Apartments.findOneAndUpdate(
-      { _id: apartmentId, userId, active: true },
-      { $unset: { userId: "" }, $addToSet: { pastUserIds: userId } },
+      { _id: apartmentId, userId: user._id, active: true },
+      { $unset: { userId: "" }, $addToSet: { pastUserIds: user._id } },
       { new: true }
     );
 
@@ -191,8 +327,8 @@ router.patch("/remove-owner/:apartmentId", checkToken, async (req, res) => {
 // @access Private [SUPERADMIN, ADMIN]
 router.patch("/create-meter/:apartmentId", checkToken, async (req, res) => {
   const userAccess = [SUPERADMIN, ADMIN];
-  const { apartmentId } = req.params;
   const requestingUserRole = (req.user || {}).role;
+  const { apartmentId } = req.params;
   const data = req.body;
 
   // Check required params
@@ -241,8 +377,8 @@ router.patch("/create-meter/:apartmentId", checkToken, async (req, res) => {
 // @access Private [SUPERADMIN, ADMIN, NORMAL]
 router.patch("/update-meter/:apartmentId", checkToken, async (req, res) => {
   const userAccess = [SUPERADMIN, ADMIN, NORMAL];
-  const { apartmentId } = req.params;
   const requestingUserRole = (req.user || {}).role;
+  const { apartmentId } = req.params;
   const data = req.body;
 
   // Check required params
@@ -322,8 +458,8 @@ router.patch("/update-meter/:apartmentId", checkToken, async (req, res) => {
 // @access Private [SUPERADMIN, ADMIN]
 router.patch("/remove-meter/:apartmentId", checkToken, async (req, res) => {
   const userAccess = [SUPERADMIN, ADMIN];
-  const { apartmentId } = req.params;
   const requestingUserRole = (req.user || {}).role;
+  const { apartmentId } = req.params;
   const data = req.body;
 
   // Check required params

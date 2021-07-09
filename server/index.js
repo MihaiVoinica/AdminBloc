@@ -78,6 +78,7 @@ mongoose
 // Routes
 app.use("/apartments", router.apartments);
 app.use("/auth", router.auth);
+app.use("/buildings", router.buildings);
 
 // Server init
 app.listen(serverConfig.PORT, () => {

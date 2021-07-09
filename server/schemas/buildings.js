@@ -10,7 +10,7 @@ const BuildingSchema = new Schema(
     userId: {
       // the user that manages the building
       type: ObjectId,
-      required: true,
+      required: false,
       ref: "users",
     },
     name: {
@@ -28,6 +28,13 @@ const BuildingSchema = new Schema(
     bills: {
       type: [BillSchema],
       default: [],
+    },
+    pastUserIds: {
+      // the user that owns the apartment
+      type: [ObjectId],
+      required: false,
+      default: [],
+      ref: "users",
     },
     active: {
       type: Boolean,

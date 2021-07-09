@@ -1,12 +1,12 @@
 const Validator = require("validator");
 const isEmpty = require("is-empty");
 
-module.exports = function validateRemoveOwnerInput(data) {
+module.exports = function validateRemoveBillInput(data) {
   let errors = {};
 
   // Fields checks
-  if (Validator.isEmpty(String(data.email || ""))) {
-    errors.email = "Email field is required";
+  if (Validator.isEmpty(data.id || "")) {
+    errors.id = "Id field is required";
   }
 
   return {
