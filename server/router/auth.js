@@ -22,7 +22,7 @@ const {
 } = require("../validators");
 
 // schemas
-const { Users } = require("../schemas");
+const { Users, Apartments } = require("../schemas");
 
 // roles
 const { NORMAL, ADMIN, SUPERADMIN } = usersConfig.ROLES;
@@ -197,13 +197,15 @@ router.post("/activate-user/:token", async (req, res) => {
 // @access Private [specific]
 router.post("/register", checkToken, async (req, res) => {
   const requestingUser = req.user;
+  const requestingUserRole = requestingUser.role;
+  const userCanCreateRoles = usersConfig.CAN_CREATE_ROLES[requestingUserRole];
   const data = req.body;
 
   // Check requesting user role
   if (
-    !requestingUser.role ||
-    !usersConfig.CAN_CREATE_ROLES[requestingUser.role] ||
-    usersConfig.CAN_CREATE_ROLES[requestingUser.role].length <= 0
+    !requestingUserRole ||
+    !userCanCreateRoles ||
+    userCanCreateRoles.length <= 0
   ) {
     return res.status(403).json({ msg: "User doesn't have enough rights" });
   }
@@ -216,13 +218,26 @@ router.post("/register", checkToken, async (req, res) => {
     return res.status(400).json(errors);
   }
 
-  const { name, email, role } = data;
+  const { name, email, role, apartmentId } = data;
 
   try {
     const user = await Users.findOne({ email });
 
-    if (user) {
+    if (!apartmentId && user) {
       return res.status(400).json({ email: "This email is already in use" });
+    } else if (apartmentId && user) {
+      const apartment = await Apartments.findOneAndUpdate(
+        { _id: apartmentId, active: true },
+        {
+          userId: user._id,
+        },
+        { new: true }
+      );
+      return res.status(200).json({
+        ...user.toObject(),
+        apartmentName: apartment.name,
+        skipped: true,
+      });
     }
 
     // User details
@@ -233,29 +248,42 @@ router.post("/register", checkToken, async (req, res) => {
     const activationPin = cryptoRandomString({ length: 6, type: "numeric" });
 
     // Create user
-    await Users.create({
+    const newUser = await Users.create({
       name,
       email,
       activationToken,
       activationPin,
-      role: role || usersConfig.CAN_CREATE_ROLES[requestingUser.role][0],
+      role: role || userCanCreateRoles[0],
       blocked: true,
     });
 
+    let apartment = null;
+    if (apartmentId) {
+      apartment = await Apartments.findOneAndUpdate(
+        { _id: apartmentId, active: true },
+        {
+          userId: newUser._id,
+        },
+        { new: true }
+      );
+    }
+
     // Send email
     const message = {
-      from: requestingUser.email,
       to: "mihaivoinica@gmail.com",
       subject: "[test email] Licenta",
       html: `<h1>Utilizator [nume: ${name}] [email: ${email}] [rol: ${role}] a fost creat</h1><br/><p>Pentru activarea lui accesati urmatorul <a href="http://localhost:3000/activate-user/${activationToken}">link</a>.</p><p>Apoi introduceti PIN-ul format din 6 cifre <b>${activationPin}</b> si noua dvs parola.</p>`,
     };
     await nodemailerTransporter.sendMail(message);
 
-    res.status(200).json({
-      name,
-      email,
-      role,
-    });
+    res
+      .status(200)
+      .json(
+        Object.assign(
+          newUser.toObject(),
+          apartment && { apartmentName: apartment.name }
+        )
+      );
   } catch (e) {
     console.error(`${serverConfig.LOGGER_PREFIX}[REGISTER] ${e}`);
     res.status(500).json({ msg: e });

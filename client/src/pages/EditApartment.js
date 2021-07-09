@@ -111,14 +111,20 @@ const EditApartment = React.memo((props) => {
         .post(`/apartments/update/${id}`, fields, getRequestHeaders())
         .then((res) => {
           const { data = {} } = res;
-          const { name = "" } = data;
-          toast.success(`Blocul [${name}] a fost adaugat cu succes!`);
-          history.push(rootPathname);
+          if (!data) {
+            toast.warning(
+              `Apartamentul nu a putut fi modificat, incercati din nou!`
+            );
+            setLoading(false);
+          } else {
+            const { name = "" } = data;
+            toast.success(`Apartamentul [${name}] a fost modificat cu succes!`);
+            history.push(rootPathname);
+          }
         })
         .catch((err) => {
           const { response = {} } = err;
           const { data = {} } = response;
-          response, data;
           const {
             name,
             number,

@@ -1,6 +1,6 @@
 // Packages
 import React, { useCallback, useEffect, useState } from "react";
-import { useHistory } from "react-router-dom";
+import { useHistory, Link } from "react-router-dom";
 import { Container, Row, Col, Table, Button } from "reactstrap";
 import { toast } from "react-toastify";
 import axios from "axios";
@@ -90,7 +90,21 @@ const Apartments = React.memo((props) => {
             <td>{name}</td>
             <td>{number}</td>
             <td>{buildingName}</td>
-            <td>{userName}</td>
+            <td>
+              {userName ? (
+                userName
+              ) : (
+                <Button
+                  tag={Link}
+                  disabled={loading}
+                  color="info"
+                  size="sm"
+                  to={`/register/${_id}`}
+                >
+                  Inrolare
+                </Button>
+              )}
+            </td>
             <td>{peopleCount}</td>
             <td>{totalArea}m2</td>
             <td>{radiantArea}m2</td>

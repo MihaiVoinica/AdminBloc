@@ -74,6 +74,7 @@ mongoose
   .catch((err) =>
     console.log(`${serverConfig.LOGGER_PREFIX} MongoDB could not connect`)
   );
+mongoose.set("useFindAndModify", false);
 
 // Routes
 app.use("/apartments", router.apartments);

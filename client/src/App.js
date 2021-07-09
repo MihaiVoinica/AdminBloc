@@ -86,6 +86,12 @@ const App = React.memo((props) => (
         component={Register}
         accessRoles={accessRoles["/register"]}
       />
+      <PrivateRoute
+        exact
+        path="/register/:apartmentId"
+        component={Register}
+        accessRoles={accessRoles["/register"]}
+      />
       {/* HOME ROUTE */}
       <FallbackRoute exact path="/" component={Dashboard} fallback={Landing} />
       {/* NOT FOUND ROUTE */}
@@ -93,7 +99,7 @@ const App = React.memo((props) => (
     </Switch>
     <ToastContainer
       position="top-right"
-      autoClose={2000}
+      autoClose={3000}
       hideProgressBar={false}
       newestOnTop
       closeOnClick

@@ -1,6 +1,6 @@
 // Packages
 import React, { useState, useMemo, useCallback } from "react";
-import { useHistory } from "react-router-dom";
+import { useHistory, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
   Container,
@@ -22,6 +22,7 @@ import "./Register.css";
 
 const Register = React.memo((props) => {
   const isSuperAdmin = useMemo(() => userHasAccess([userRoles.SUPERADMIN]), []);
+  const { apartmentId } = useParams();
   const [loading, setLoading] = useState(false);
   const [fields, setFields] = useState({
     name: "",
@@ -41,13 +42,28 @@ const Register = React.memo((props) => {
       setErrors({});
 
       axios
-        .post("/auth/register", fields, getRequestHeaders())
+        .post("/auth/register", { ...fields, apartmentId }, getRequestHeaders())
         .then((res) => {
-          const { name, email } = res.data;
-          toast.success(
-            `An email has been sent to [${email}] in order to activate user <${name}>`
-          );
-          history.push("/");
+          const { name, email, apartmentName, skipped } = res.data;
+          if (skipped) {
+            toast.warning(`User-ul <${name}> exista deja in baza de date`);
+          } else {
+            toast.success(
+              `Un email a fost trimis catre [${email}] pentru activarea user-ului <${name}>`
+            );
+          }
+
+          if (apartmentName) {
+            toast.success(
+              `Apartamentului [${apartmentName}] i s-a atribuit utilizatorul <${name}>`
+            );
+          }
+
+          if (apartmentId) {
+            history.push("/apartments");
+          } else {
+            history.push("/");
+          }
         })
         .catch((err) => {
           const { response = {} } = err;
@@ -72,7 +88,11 @@ const Register = React.memo((props) => {
   const onCancel = useCallback(
     (event) => {
       event.preventDefault();
-      history.push("/");
+      if (apartmentId) {
+        history.push("/apartments");
+      } else {
+        history.push("/");
+      }
     },
     [history]
   );

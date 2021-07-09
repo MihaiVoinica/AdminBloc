@@ -160,7 +160,6 @@ router.post("/create", checkToken, async (req, res) => {
 
   try {
     let building = null;
-    let apartments = null;
 
     if (requestingUserRole === ADMIN) {
       building = await Buildings.create({
@@ -198,10 +197,10 @@ router.post("/create", checkToken, async (req, res) => {
           })
         );
       }
-      apartments = await Promise.all(promises);
+      await Promise.all(promises);
     }
 
-    res.status(200).json({ building, apartments });
+    res.status(200).json(building);
   } catch (e) {
     console.log("[/buildings/create] ERROR:", e);
     res.status(500).json(e);
