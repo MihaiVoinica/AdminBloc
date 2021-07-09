@@ -216,11 +216,7 @@ router.post("/register", checkToken, async (req, res) => {
     return res.status(400).json(errors);
   }
 
-  const {
-    name,
-    email,
-    role = usersConfig.CAN_CREATE_ROLES[requestingUser.role][0],
-  } = data;
+  const { name, email, role } = data;
 
   try {
     const user = await Users.findOne({ email });
@@ -242,7 +238,7 @@ router.post("/register", checkToken, async (req, res) => {
       email,
       activationToken,
       activationPin,
-      role,
+      role: role || usersConfig.CAN_CREATE_ROLES[requestingUser.role][0],
       blocked: true,
     });
 

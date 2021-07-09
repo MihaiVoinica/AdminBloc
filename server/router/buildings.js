@@ -109,7 +109,7 @@ router.get("/list", checkToken, async (req, res) => {
       );
     } else {
       const [users, buildings] = await Promise.all([
-        Users.find({ active: true }),
+        Users.find({ role: ADMIN, active: true }),
         Buildings.find({
           active: true,
         }),
@@ -266,7 +266,11 @@ router.post("/update/:buildingId", checkToken, async (req, res) => {
             address,
             apartmentsCount,
           },
-          userId && { userId }
+          userId
+            ? { userId }
+            : {
+                $unset: { userId: "" },
+              }
         ),
         { new: true }
       );

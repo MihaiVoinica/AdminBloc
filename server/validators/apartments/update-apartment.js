@@ -8,6 +8,9 @@ module.exports = function validateUpdateApartmentInput(data) {
   if (Validator.isEmpty(String(data.buildingId || ""))) {
     errors.buildingId = "BuildingId field is required";
   }
+  if (Validator.isEmpty(String(data.name || ""))) {
+    errors.name = "Name field is required";
+  }
   if (!Validator.isInt(String(data.number))) {
     errors.number = "Number field is not an integer";
   }

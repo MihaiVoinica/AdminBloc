@@ -75,8 +75,6 @@ const AddBuilding = React.memo((props) => {
           setLoading(false);
           setErrors({ name, address, apartmentsCount });
         });
-
-      console.log("onSubmit", fields);
     },
     [history, fields, rootPathname]
   );
@@ -87,8 +85,12 @@ const AddBuilding = React.memo((props) => {
 
   const onInputChange = useCallback((event) => {
     const { target = {} } = event;
-    const { name, value } = target;
-    setFields((prevFields) => ({ ...prevFields, [name]: value }));
+    const { name, value, type, checked } = target;
+    if (type === "checkbox") {
+      setFields((prevFields) => ({ ...prevFields, [name]: checked }));
+    } else {
+      setFields((prevFields) => ({ ...prevFields, [name]: value }));
+    }
   }, []);
 
   return (
@@ -105,6 +107,7 @@ const AddBuilding = React.memo((props) => {
                     type="select"
                     name="userId"
                     id="userId"
+                    invalid={Boolean(errors["userId"])}
                     value={fields["userId"]}
                     onChange={onInputChange}
                   >
@@ -115,6 +118,7 @@ const AddBuilding = React.memo((props) => {
                       </option>
                     ))}
                   </Input>
+                  <FormFeedback>{errors["userId"]}</FormFeedback>
                 </FormGroup>
               ) : null}
               <FormGroup>
@@ -160,7 +164,7 @@ const AddBuilding = React.memo((props) => {
                     type="checkbox"
                     id="autoGenerate"
                     name="autoGenerate"
-                    value={fields["autoGenerate"]}
+                    checked={Boolean(fields["autoGenerate"])}
                     onChange={onInputChange}
                   />{" "}
                   Genereaza automat apartamentele

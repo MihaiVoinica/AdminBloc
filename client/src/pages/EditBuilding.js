@@ -23,7 +23,7 @@ import "./EditBuilding.css";
 const EditBuilding = React.memo((props) => {
   const { id: buildingId } = useParams();
   const rootPathname = useMemo(() => "/buildings", []);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [admins, setAdmins] = useState([]);
   const [fields, setFields] = useState({
     userId: "",
@@ -36,7 +36,6 @@ const EditBuilding = React.memo((props) => {
 
   useEffect(() => {
     let promisesFlag = 2;
-    setLoading(true);
 
     if (userHasAccess([userRoles.SUPERADMIN])) {
       axios
@@ -106,8 +105,6 @@ const EditBuilding = React.memo((props) => {
           setLoading(false);
           setErrors({ name, address, apartmentsCount });
         });
-
-      console.log("onSubmit", fields);
     },
     [history, fields, rootPathname]
   );

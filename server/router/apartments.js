@@ -18,21 +18,110 @@ const {
 } = require("../validators");
 
 // schemas
-const { Apartments } = require("../schemas");
+const { Apartments, Buildings, Users } = require("../schemas");
 
 // roles
 const { NORMAL, ADMIN, SUPERADMIN } = usersConfig.ROLES;
 
-// @route GET /apartments/create
+// @route GET /apartments/list
+// @desc
+// @access Private [SUPERADMIN, ADMIN, NORMAL]
+router.get("/list", checkToken, async (req, res) => {
+  const userAccess = [SUPERADMIN, ADMIN, NORMAL];
+  const requestingUser = req.user || {};
+  const requestingUserId = requestingUser.id;
+  const requestingUserRole = requestingUser.role;
+  const requestingUserEmail = requestingUser.email;
+
+  // Check requesting user role
+  if (
+    !requestingUserId ||
+    !requestingUserRole ||
+    !requestingUserEmail ||
+    !userAccess.includes(requestingUserRole)
+  ) {
+    return res.status(403).json({ msg: "User doesn't have enough rights" });
+  }
+
+  try {
+    let apartments = null;
+    if (requestingUserRole === NORMAL) {
+      apartments = await Apartments.find({
+        userId: requestingUserId,
+        active: true,
+      });
+    } else if (requestingUserRole === ADMIN) {
+      const buildingsIds = (
+        await Buildings.find({
+          userId: requestingUserId,
+          active: true,
+        })
+      ).map((_id) => _id);
+
+      apartments = await Apartments.find({
+        buildingId: { $in: buildingsIds },
+        active: true,
+      });
+    } else {
+      apartments = await Apartments.find({
+        active: true,
+      });
+    }
+
+    const buildingsHash = {};
+    const buildingsIds = [];
+    const usersHash = {};
+    const usersIds = [];
+
+    apartments.forEach(({ buildingId, userId }) => {
+      buildingsIds.push(buildingId);
+      usersIds.push(userId);
+    });
+    const [users, buildings] = await Promise.all([
+      Users.find({ _id: { $in: usersIds }, role: NORMAL, active: true }),
+      Buildings.find({
+        _id: { $in: buildingsIds },
+        active: true,
+      }),
+    ]);
+    users.forEach(({ _id, email }) => {
+      usersHash[_id] = email;
+    });
+    buildings.forEach(({ _id, name }) => {
+      buildingsHash[_id] = name;
+    });
+
+    res.status(200).json(
+      apartments.map((apartment) => ({
+        ...apartment.toObject(),
+        userName: usersHash[apartment.userId],
+        buildingName: buildingsHash[apartment.buildingId],
+      }))
+    );
+  } catch (e) {
+    console.log("[/apartments/list] ERROR:", e);
+    res.status(500).json(e);
+  }
+});
+
+// @route GET /apartments/get
 // @desc
 // @access Private [SUPERADMIN, ADMIN, NORMAL]
 router.get("/get", checkToken, async (req, res) => {
   const userAccess = [SUPERADMIN, ADMIN, NORMAL];
-  const requestingUserRole = (req.user || {}).role;
+  const requestingUser = req.user || {};
+  const requestingUserId = requestingUser.id;
+  const requestingUserRole = requestingUser.role;
+  const requestingUserEmail = requestingUser.email;
   const data = req.query;
 
   // Check requesting user role
-  if (!requestingUserRole || !userAccess.includes(requestingUserRole)) {
+  if (
+    !requestingUserId ||
+    !requestingUserRole ||
+    !requestingUserEmail ||
+    !userAccess.includes(requestingUserRole)
+  ) {
     return res.status(403).json({ msg: "User doesn't have enough rights" });
   }
 
@@ -43,13 +132,32 @@ router.get("/get", checkToken, async (req, res) => {
   }
 
   try {
-    // TODO: find building before get
-    // TODO: check requesting user has rights on the specific building
+    let apartment = null;
+    if (requestingUserRole === NORMAL) {
+      apartment = await Apartments.findOne({
+        _id: id,
+        userId: requestingUserId,
+        active: true,
+      });
+    } else if (requestingUserRole === ADMIN) {
+      const buildingsIds = (
+        await Buildings.find({
+          userId: requestingUserId,
+          active: true,
+        })
+      ).map((_id) => _id);
 
-    const apartment = await Apartments.findOne({
-      _id: id,
-      active: true,
-    });
+      apartment = await Apartments.findOne({
+        _id: id,
+        buildingId: { $in: buildingsIds },
+        active: true,
+      });
+    } else {
+      apartment = await Apartments.findOne({
+        _id: id,
+        active: true,
+      });
+    }
 
     res.status(200).json(apartment);
   } catch (e) {
@@ -63,11 +171,17 @@ router.get("/get", checkToken, async (req, res) => {
 // @access Private [SUPERADMIN, ADMIN]
 router.post("/create", checkToken, async (req, res) => {
   const userAccess = [SUPERADMIN, ADMIN];
-  const requestingUserRole = (req.user || {}).role;
+  const requestingUser = req.user || {};
+  const requestingUserId = requestingUser.id;
+  const requestingUserRole = requestingUser.role;
   const data = req.body;
 
   // Check requesting user role
-  if (!requestingUserRole || !userAccess.includes(requestingUserRole)) {
+  if (
+    !requestingUserId ||
+    !requestingUserRole ||
+    !userAccess.includes(requestingUserRole)
+  ) {
     return res.status(403).json({ msg: "User doesn't have enough rights" });
   }
 
@@ -88,13 +202,11 @@ router.post("/create", checkToken, async (req, res) => {
     radiantArea,
     share,
     thermalProvider,
+    userEmail,
   } = data;
 
   try {
-    // TODO: find building before create
-    // TODO: check requesting user has rights on the specific building
-
-    const apartment = await Apartments.create({
+    const createObj = {
       buildingId,
       name,
       number,
@@ -103,7 +215,41 @@ router.post("/create", checkToken, async (req, res) => {
       radiantArea,
       share,
       thermalProvider,
-    });
+    };
+
+    if (userEmail) {
+      const user = await Users.findOne({
+        email: userEmail,
+        role: NORMAL,
+        active: true,
+      });
+
+      if (!user) {
+        return res.status(400).json({ userEmail: "Invalid Email" });
+      }
+
+      Object.assign(createObj, { userId: user._id });
+    }
+
+    let building = null;
+    if (requestingUserRole === ADMIN) {
+      building = await Buildings.findOne({
+        _id: buildingId,
+        active: true,
+        userId: requestingUserId,
+      });
+    } else {
+      building = await Buildings.findOne({
+        _id: buildingId,
+        active: true,
+      });
+    }
+
+    if (!building) {
+      return res.status(400).json({ msg: "Invalid Building" });
+    }
+
+    const apartment = await Apartments.create(createObj);
 
     res.status(200).json(apartment);
   } catch (e) {
@@ -117,12 +263,18 @@ router.post("/create", checkToken, async (req, res) => {
 // @access Private [SUPERADMIN, ADMIN]
 router.post("/update/:apartmentId", checkToken, async (req, res) => {
   const userAccess = [SUPERADMIN, ADMIN];
-  const requestingUserRole = (req.user || {}).role;
   const { apartmentId } = req.params;
+  const requestingUser = req.user || {};
+  const requestingUserId = requestingUser.id;
+  const requestingUserRole = requestingUser.role;
   const data = req.body;
 
   // Check requesting user role
-  if (!requestingUserRole || !userAccess.includes(requestingUserRole)) {
+  if (
+    !requestingUserId ||
+    !requestingUserRole ||
+    !userAccess.includes(requestingUserRole)
+  ) {
     return res.status(403).json({ msg: "User doesn't have enough rights" });
   }
 
@@ -136,29 +288,63 @@ router.post("/update/:apartmentId", checkToken, async (req, res) => {
 
   const {
     buildingId,
+    name,
     number,
     peopleCount,
     totalArea,
     radiantArea,
     share,
     thermalProvider,
+    userEmail,
   } = data;
 
   try {
-    // TODO: find building before update
-    // TODO: check requesting user has rights on the specific building
+    const updateObj = {
+      buildingId,
+      name,
+      number,
+      peopleCount,
+      totalArea,
+      radiantArea,
+      share,
+      thermalProvider,
+    };
+
+    if (userEmail) {
+      const user = await Users.findOne({
+        email: userEmail,
+        role: NORMAL,
+        active: true,
+      });
+
+      if (!user) {
+        return res.status(400).json({ userEmail: "Invalid Email" });
+      }
+
+      Object.assign(updateObj, { userId: user._id });
+    }
+
+    let building = null;
+    if (requestingUserRole === ADMIN) {
+      building = await Buildings.findOne({
+        _id: buildingId,
+        userId: requestingUserId,
+        active: true,
+      });
+    } else {
+      building = await Buildings.findOne({
+        _id: buildingId,
+        active: true,
+      });
+    }
+
+    if (!building) {
+      return res.status(400).json({ msg: "Invalid Building" });
+    }
 
     const apartment = await Apartments.findOneAndUpdate(
       { _id: apartmentId, active: true },
-      {
-        buildingId,
-        number,
-        peopleCount,
-        totalArea,
-        radiantArea,
-        share,
-        thermalProvider,
-      },
+      updateObj,
       { new: true }
     );
 
@@ -169,12 +355,14 @@ router.post("/update/:apartmentId", checkToken, async (req, res) => {
   }
 });
 
-// @route PATCH /apartments/update/:apartmentId
+// @route PATCH /apartments/remove/:apartmentId
 // @desc
 // @access Private [SUPERADMIN, ADMIN]
 router.patch("/remove/:apartmentId", checkToken, async (req, res) => {
   const userAccess = [SUPERADMIN, ADMIN];
-  const requestingUserRole = (req.user || {}).role;
+  const requestingUser = req.user || {};
+  const requestingUserId = requestingUser.id;
+  const requestingUserRole = requestingUser.role;
   const { apartmentId } = req.params;
 
   // Check requesting user role
@@ -183,18 +371,41 @@ router.patch("/remove/:apartmentId", checkToken, async (req, res) => {
   }
 
   try {
-    // TODO: find building before update
-    // TODO: check requesting user has rights on the specific building
+    const apartment = await Apartments.findOne({
+      _id: apartmentId,
+      active: true,
+    });
 
-    const apartment = await Apartments.findOneAndUpdate(
+    if (requestingUserRole === ADMIN) {
+      const building = await Buildings.findOne({
+        _id: apartment.buildingId,
+        userId: requestingUserId,
+        active: true,
+      });
+
+      if (!building) {
+        return res.status(400).json({ msg: "Invalid Building" });
+      }
+    } else {
+      const building = await Buildings.findOne({
+        _id: apartment.buildingId,
+        active: true,
+      });
+
+      if (!building) {
+        return res.status(400).json({ msg: "Invalid Building" });
+      }
+    }
+
+    const newApartment = await Apartments.findOneAndUpdate(
       { _id: apartmentId, active: true },
       { active: false },
       { new: true }
     );
 
-    res.status(200).json(apartment);
+    res.status(200).json(newApartment);
   } catch (e) {
-    console.log("[/apartments/update] ERROR:", e);
+    console.log("[/apartments/remove] ERROR:", e);
     res.status(500).json(e);
   }
 });

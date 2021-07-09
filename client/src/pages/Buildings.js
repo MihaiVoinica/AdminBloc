@@ -36,7 +36,6 @@ const Buildings = React.memo((props) => {
 
   const onEditClick = useCallback(
     (id) => {
-      console.log("onEditClick", id);
       history.push(`${history.location.pathname}/edit/${id}`);
     },
     [history]
@@ -62,7 +61,6 @@ const Buildings = React.memo((props) => {
         .finally(() => {
           setLoading(false);
         });
-      console.log("onRemoveClick", id);
     },
     [buildings]
   );
