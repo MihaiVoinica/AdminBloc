@@ -7,7 +7,7 @@ const { usersConfig } = require("../config");
 const router = express.Router();
 
 // validators
-const { validateCreateTicketInput } = require("../validators");
+const {} = require("../validators");
 
 // schemas
 const { Apartments, Buildings, Tickets } = require("../schemas");
@@ -103,7 +103,7 @@ router.post("/create", checkToken, async (req, res) => {
       }
 
       Object.assign(createObj, { buildingId: apartment.buildingId });
-    } else {
+    } else if (requestingUserRole === ADMIN) {
       const apartment = await Apartments.findOne({
         _id: apartmentId,
         active: true,
@@ -131,6 +131,61 @@ router.post("/create", checkToken, async (req, res) => {
     res.status(200).json(ticket);
   } catch (e) {
     console.log("[/tickets/create] ERROR:", e);
+    res.status(500).json(e);
+  }
+});
+
+// @route PATCH /tickets/confirm/:ticketId
+// @desc
+// @access Private [SUPERADMIN, ADMIN]
+router.patch("/confirm/:ticketId", checkToken, async (req, res) => {
+  const userAccess = [SUPERADMIN, ADMIN];
+  const requestingUser = req.user || {};
+  const requestingUserId = requestingUser.id;
+  const requestingUserRole = requestingUser.role;
+  const { ticketId } = req.params;
+
+  // Check requesting user role
+  if (
+    !requestingUserId ||
+    !requestingUserRole ||
+    !userAccess.includes(requestingUserRole)
+  ) {
+    return res.status(403).json({ msg: "User doesn't have enough rights" });
+  }
+
+  try {
+    const ticket = await Tickets.findOne({
+      _id: ticketId,
+      active: true,
+    });
+
+    if (!ticket) {
+      return res.status(400).json({ msg: "Invalid Ticket" });
+    }
+
+    const building = await Buildings.findOne({
+      _id: ticket.buildingId,
+      userId: requestingUserId,
+      active: true,
+    });
+
+    if (!building) {
+      return res.status(400).json({ msg: "Invalid Building" });
+    }
+
+    const newTicket = await Tickets.findOneAndUpdate(
+      {
+        _id: ticketId,
+        active: true,
+      },
+      { status: "confirmed" },
+      { new: true }
+    );
+
+    res.status(200).json(newTicket);
+  } catch (e) {
+    console.log("[/tickets/confirm/:ticketId] ERROR:", e);
     res.status(500).json(e);
   }
 });
@@ -172,6 +227,82 @@ router.patch("/resolve/:ticketId", checkToken, async (req, res) => {
 
     if (!building) {
       return res.status(400).json({ msg: "Invalid Building" });
+    }
+
+    const newTicket = await Tickets.findOneAndUpdate(
+      {
+        _id: ticketId,
+        active: true,
+      },
+      { status: "resolved" },
+      { new: true }
+    );
+
+    res.status(200).json(newTicket);
+  } catch (e) {
+    console.log("[/tickets/resolve/:ticketId] ERROR:", e);
+    res.status(500).json(e);
+  }
+});
+
+// @route PATCH /tickets/resolve/:ticketId
+// @desc
+// @access Private [SUPERADMIN, ADMIN]
+router.patch("/remove/:ticketId", checkToken, async (req, res) => {
+  const userAccess = [SUPERADMIN, ADMIN, NORMAL];
+  const requestingUser = req.user || {};
+  const requestingUserId = requestingUser.id;
+  const requestingUserRole = requestingUser.role;
+  const { ticketId } = req.params;
+
+  // Check requesting user role
+  if (
+    !requestingUserId ||
+    !requestingUserRole ||
+    !userAccess.includes(requestingUserRole)
+  ) {
+    return res.status(403).json({ msg: "User doesn't have enough rights" });
+  }
+
+  try {
+    const ticket = await Tickets.findOne({
+      _id: ticketId,
+      active: true,
+    });
+
+    if (!ticket) {
+      return res.status(400).json({ msg: "Invalid Ticket" });
+    }
+
+    if (requestingUserRole === NORMAL) {
+      const apartment = await Apartments.findOne({
+        _id: ticket.apartmentId,
+        userId: requestingUserId,
+        active: true,
+      });
+
+      if (!apartment) {
+        return res.status(400).json({ msg: "Invalid Apartment" });
+      }
+    } else if (requestingUserRole === ADMIN) {
+      const apartment = await Apartments.findOne({
+        _id: ticket.apartmentId,
+        active: true,
+      });
+
+      if (!apartment || !apartment.buildingId) {
+        return res.status(400).json({ msg: "Invalid Apartment" });
+      }
+
+      const building = await Buildings.findOne({
+        _id: ticket.buildingId,
+        userId: requestingUserId,
+        active: true,
+      });
+
+      if (!building) {
+        return res.status(400).json({ msg: "Invalid Building" });
+      }
     }
 
     const newTicket = await Tickets.findOneAndUpdate(

@@ -29,6 +29,11 @@ const TicketSchema = new Schema(
       type: String,
       required: true,
     },
+    status: {
+      type: String,
+      required: true,
+      enum: ["created", "confirmed", "resolved"],
+    },
     active: {
       type: Boolean,
       default: true,
