@@ -81,6 +81,7 @@ router.post("/create", checkToken, async (req, res) => {
 
   const {
     buildingId,
+    name,
     number,
     peopleCount,
     totalArea,
@@ -95,6 +96,7 @@ router.post("/create", checkToken, async (req, res) => {
 
     const apartment = await Apartments.create({
       buildingId,
+      name,
       number,
       peopleCount,
       totalArea,

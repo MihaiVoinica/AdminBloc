@@ -17,6 +17,8 @@ module.exports = function validateCreateBuildingInput(data) {
 
   // Transforms
   data.apartmentsCount = Number(data.apartmentsCount);
+  data.userId = String(data.userId || "");
+  data.autoGenerate = Boolean(data.autoGenerate || false);
 
   return {
     errors,

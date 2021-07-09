@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { withRouter, Link } from "react-router-dom";
 import {
   Collapse,
@@ -8,6 +8,10 @@ import {
   Nav,
   NavItem,
   NavLink,
+  DropdownItem,
+  UncontrolledDropdown,
+  DropdownToggle,
+  DropdownMenu,
 } from "reactstrap";
 // Utils
 import {
@@ -21,8 +25,72 @@ import "./NavigationBar.css";
 
 const NavigationBar = React.memo((props) => {
   const [isOpen, setIsOpen] = useState(false);
+  const isAuthFlag = isAuthenticated();
 
   const toggle = () => setIsOpen(!isOpen);
+
+  const getAuthRoutes = useCallback(
+    () =>
+      isAuthFlag ? (
+        <NavItem>
+          <NavLink tag={Link} to="/logout">
+            Logout ({getUserEmail()})
+          </NavLink>
+        </NavItem>
+      ) : (
+        <NavItem>
+          <NavLink tag={Link} to="/login">
+            Login
+          </NavLink>
+        </NavItem>
+      ),
+    [isAuthFlag]
+  );
+
+  const getManagingRoutes = useCallback(() => {
+    if (!isAuthFlag) return null;
+
+    const routes = [];
+
+    if (userHasAccess(accessRoles["/apartments"])) {
+      routes.push((key) => (
+        <DropdownItem key={key} tag={Link} to="/apartments">
+          Apartamente
+        </DropdownItem>
+      ));
+    }
+
+    if (userHasAccess(accessRoles["/buildings"])) {
+      routes.push((key) => (
+        <DropdownItem key={key} tag={Link} to="/buildings">
+          Blocuri
+        </DropdownItem>
+      ));
+    }
+
+    if (userHasAccess(accessRoles["/register"])) {
+      routes.push((key) => (
+        <DropdownItem key={key} tag={Link} to="/register">
+          Inroleaza utilizator
+        </DropdownItem>
+      ));
+    }
+
+    if (!routes.length) return null;
+
+    return (
+      <UncontrolledDropdown nav inNavbar>
+        <DropdownToggle nav caret>
+          Administrare
+        </DropdownToggle>
+        <DropdownMenu right>
+          {routes.map((getItem, id) =>
+            getItem(`navbar-manage-dropdown-item-${id}`)
+          )}
+        </DropdownMenu>
+      </UncontrolledDropdown>
+    );
+  }, [isAuthFlag]);
 
   return (
     <div>
@@ -33,35 +101,15 @@ const NavigationBar = React.memo((props) => {
         <NavbarToggler onClick={toggle} />
         <Collapse isOpen={isOpen} navbar>
           <Nav className="ml-auto" navbar>
-            {isAuthenticated() ? (
-              <>
-                <NavItem>
-                  <NavLink tag={Link} to="/">
-                    Dashboard
-                  </NavLink>
-                </NavItem>
-                {userHasAccess(accessRoles["/register"]) ? (
-                  <NavItem>
-                    <NavLink tag={Link} to="/register">
-                      Register
-                    </NavLink>
-                  </NavItem>
-                ) : null}
-                <NavItem>
-                  <NavLink tag={Link} to="/logout">
-                    Logout ({getUserEmail()})
-                  </NavLink>
-                </NavItem>
-              </>
-            ) : (
-              <>
-                <NavItem>
-                  <NavLink tag={Link} to="/login">
-                    Login
-                  </NavLink>
-                </NavItem>
-              </>
-            )}
+            {isAuthFlag ? (
+              <NavItem>
+                <NavLink tag={Link} to="/">
+                  Dashboard
+                </NavLink>
+              </NavItem>
+            ) : null}
+            {getManagingRoutes()}
+            {getAuthRoutes()}
           </Nav>
         </Collapse>
       </Navbar>

@@ -1,5 +1,5 @@
 // Packages
-import React, { useState, useCallback } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useHistory } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
@@ -16,15 +16,17 @@ import {
 } from "reactstrap";
 import axios from "axios";
 // Utils
-import { getUserToken } from "../utils";
+import { getRequestHeaders, userHasAccess, userRoles } from "../utils";
 // Styling
 import "./Register.css";
 
 const Register = React.memo((props) => {
+  const isSuperAdmin = useMemo(() => userHasAccess([userRoles.SUPERADMIN]), []);
   const [loading, setLoading] = useState(false);
   const [fields, setFields] = useState({
     name: "",
     email: "",
+    role: "",
     password: "",
     password2: "",
   });
@@ -39,12 +41,7 @@ const Register = React.memo((props) => {
       setErrors({});
 
       axios
-        .post("/auth/register", fields, {
-          headers: {
-            "X-Auth-Token": getUserToken(),
-            "Content-Type": "application/json",
-          },
-        })
+        .post("/auth/register", fields, getRequestHeaders())
         .then((res) => {
           const { name, email } = res.data;
           toast.success(
@@ -61,6 +58,15 @@ const Register = React.memo((props) => {
         });
     },
     [history, fields]
+  );
+
+  const onKeyPress = useCallback(
+    (event) => {
+      if (event.key === "Enter") {
+        onSubmit(event);
+      }
+    },
+    [onSubmit]
   );
 
   const onCancel = useCallback(
@@ -82,8 +88,8 @@ const Register = React.memo((props) => {
       <Row>
         <Col sm="12" md={{ size: 8, offset: 2 }} lg={{ size: 6, offset: 3 }}>
           <Card className="p-5 bg-light shadow-sm">
-            <h2 className="mx-auto">Register New User</h2>
-            <Form>
+            <h2 className="mx-auto">Inrolare utilizator nou</h2>
+            <Form onKeyPress={onKeyPress}>
               <FormGroup>
                 <Label for="name">Name</Label>
                 <Input
@@ -108,32 +114,25 @@ const Register = React.memo((props) => {
                 />
                 <FormFeedback>{errors["email"]}</FormFeedback>
               </FormGroup>
-              {/* <FormGroup>
-                <Label for="password">Password</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="on"
-                  invalid={Boolean(errors["password"])}
-                  value={fields["password"]}
-                  onChange={onInputChange}
-                />
-                <FormFeedback>{errors["password"]}</FormFeedback>
-              </FormGroup>
-              <FormGroup>
-                <Label for="password">Confirm Password</Label>
-                <Input
-                  id="password2"
-                  name="password2"
-                  type="password"
-                  autoComplete="on"
-                  invalid={Boolean(errors["password2"])}
-                  value={fields["password2"]}
-                  onChange={onInputChange}
-                />
-                <FormFeedback>{errors["password2"]}</FormFeedback>
-              </FormGroup> */}
+              {isSuperAdmin ? (
+                <FormGroup>
+                  <Label for="role">Rol</Label>
+                  <Input
+                    type="select"
+                    name="role"
+                    id="role"
+                    value={fields["role"]}
+                    onChange={onInputChange}
+                  >
+                    <option value="">Alegeti un rol</option>
+                    <option value={userRoles.SUPERADMIN}>
+                      Super Administrator
+                    </option>
+                    <option value={userRoles.ADMIN}>Administrator</option>
+                  </Input>
+                  <FormFeedback>{errors["role"]}</FormFeedback>
+                </FormGroup>
+              ) : null}
               <FormGroup>
                 <Button
                   color="primary"
@@ -141,7 +140,7 @@ const Register = React.memo((props) => {
                   onClick={onSubmit}
                   disabled={loading}
                 >
-                  Register
+                  Salvare
                 </Button>
                 <Button
                   outline
@@ -149,7 +148,7 @@ const Register = React.memo((props) => {
                   className="float-left"
                   onClick={onCancel}
                 >
-                  Cancel
+                  Renuntare
                 </Button>
               </FormGroup>
             </Form>

@@ -53,6 +53,15 @@ const Login = React.memo((props) => {
     [history, fields]
   );
 
+  const onKeyPress = useCallback(
+    (event) => {
+      if (event.key === "Enter") {
+        onSubmit(event);
+      }
+    },
+    [onSubmit]
+  );
+
   const onCancel = useCallback(
     (event) => {
       event.preventDefault();
@@ -73,7 +82,7 @@ const Login = React.memo((props) => {
         <Col sm="12" md={{ size: 8, offset: 2 }} lg={{ size: 6, offset: 3 }}>
           <Card className="p-5 bg-light shadow-sm">
             <h2 className="mx-auto">Login</h2>
-            <Form>
+            <Form onKeyPress={onKeyPress}>
               <FormGroup>
                 <Label for="email">Email</Label>
                 <Input

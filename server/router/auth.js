@@ -24,6 +24,9 @@ const {
 // schemas
 const { Users } = require("../schemas");
 
+// roles
+const { NORMAL, ADMIN, SUPERADMIN } = usersConfig.ROLES;
+
 // @route GET /auth/validate-user/:token
 // @desc validate that token is assigned to an existing and blocked user
 // @access Public
@@ -43,6 +46,27 @@ router.get("/validate-user/:token", async (req, res) => {
     }
 
     res.status(200).json({ isValid: true });
+  } catch (e) {
+    res.status(500).json({ msg: e });
+  }
+});
+
+// @route GET /auth/get-admins
+// @desc get all users with admin role
+// @access Private [SUPERADMIN]
+router.get("/get-admins", checkToken, async (req, res) => {
+  const userAccess = [SUPERADMIN];
+  const requestingUser = req.user || {};
+  const requestingUserRole = requestingUser.role;
+
+  // Check requesting user role
+  if (!requestingUserRole || !userAccess.includes(requestingUserRole)) {
+    return res.status(403).json({ msg: "User doesn't have enough rights" });
+  }
+
+  try {
+    const users = await Users.find({ role: ADMIN, active: true });
+    res.status(200).json(users);
   } catch (e) {
     res.status(500).json({ msg: e });
   }
