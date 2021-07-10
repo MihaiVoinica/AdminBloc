@@ -1,6 +1,12 @@
 // Packages
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Container, Row, Col, Table } from "reactstrap";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+} from "react";
+import { Container, Row, Col, Table, Spinner } from "reactstrap";
 import { toast } from "react-toastify";
 import axios from "axios";
 // Utils
@@ -13,6 +19,8 @@ const Dashboard = React.memo((props) => {
     () => userHasAccess([userRoles.SUPERADMIN, userRoles.ADMIN]),
     []
   );
+  const promisesFlag = useRef(2);
+  const [loading, setLoading] = useState(true);
   const [buildings, setBuildings] = useState([]);
   const [apartments, setApartments] = useState([]);
 
@@ -23,6 +31,10 @@ const Dashboard = React.memo((props) => {
         .then((res) => {
           const { data = [] } = res;
           setBuildings(data);
+
+          if (!--promisesFlag.current) {
+            setLoading(false);
+          }
         })
         .catch((err) => {
           const { response = {} } = err;
@@ -30,6 +42,10 @@ const Dashboard = React.memo((props) => {
           const { msg } = data;
           toast.error(`Error: ${msg}!`);
         });
+    } else {
+      if (!--promisesFlag.current) {
+        setLoading(false);
+      }
     }
 
     axios
@@ -37,6 +53,10 @@ const Dashboard = React.memo((props) => {
       .then((res) => {
         const { data = [] } = res;
         setApartments(data);
+
+        if (!--promisesFlag.current) {
+          setLoading(false);
+        }
       })
       .catch((err) => {
         const { response = {} } = err;
@@ -125,7 +145,17 @@ const Dashboard = React.memo((props) => {
                     <th style={{ minWidth: "100px" }}>Nr. Apart.</th>
                   </tr>
                 </thead>
-                <tbody>{getBuildingsRows()}</tbody>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={4} className="text-center">
+                        <Spinner style={{ width: "3rem", height: "3rem" }} />
+                      </td>
+                    </tr>
+                  ) : (
+                    getBuildingsRows()
+                  )}
+                </tbody>
               </Table>
             </Col>
           </Row>
@@ -156,7 +186,17 @@ const Dashboard = React.memo((props) => {
                 <th>Total</th>
               </tr>
             </thead>
-            <tbody>{getApartmentsRows()}</tbody>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={11} className="text-center">
+                    <Spinner style={{ width: "3rem", height: "3rem" }} />
+                  </td>
+                </tr>
+              ) : (
+                getApartmentsRows()
+              )}
+            </tbody>
           </Table>
         </Col>
       </Row>

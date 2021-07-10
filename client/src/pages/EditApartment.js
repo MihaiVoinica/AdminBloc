@@ -1,5 +1,11 @@
 // Packages
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+} from "react";
 import { useHistory, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
@@ -36,16 +42,16 @@ const EditApartment = React.memo((props) => {
     share: "",
     thermalProvider: false,
   });
+  const promisesFlag = useRef(2);
   const [errors, setErrors] = useState({});
   const history = useHistory();
 
   useEffect(() => {
-    let promisesFlag = 2;
-    //TODO
     axios
       .get(`/apartments/get`, getRequestHeaders({ id }))
       .then((res) => {
-        const { data = [] } = res;
+        const { data = {} } = res;
+        console.log(data.userEmail);
         const {
           name,
           number,
@@ -69,8 +75,7 @@ const EditApartment = React.memo((props) => {
           thermalProvider,
         });
 
-        promisesFlag--;
-        if (!promisesFlag) {
+        if (!--promisesFlag.current) {
           setLoading(false);
         }
       })
@@ -87,8 +92,7 @@ const EditApartment = React.memo((props) => {
         const { data = [] } = res;
         setBuildings(data.map(({ _id, name }) => ({ _id, name })));
 
-        promisesFlag--;
-        if (!promisesFlag) {
+        if (!--promisesFlag.current) {
           setLoading(false);
         }
       })
@@ -113,12 +117,12 @@ const EditApartment = React.memo((props) => {
           const { data = {} } = res;
           if (!data) {
             toast.warning(
-              `Apartamentul nu a putut fi modificat, incercati din nou!`
+              "Apartamentul nu a putut fi modificat, incercati din nou"
             );
             setLoading(false);
           } else {
             const { name = "" } = data;
-            toast.success(`Apartamentul [${name}] a fost modificat cu succes!`);
+            toast.success(`Apartamentul [${name}] a fost modificat cu succes`);
             history.push(rootPathname);
           }
         })

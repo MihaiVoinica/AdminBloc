@@ -47,6 +47,23 @@ const NavigationBar = React.memo((props) => {
     [isAuthFlag]
   );
 
+  const getOperationsRoutes = useCallback(() => {
+    if (!isAuthFlag) return null;
+
+    return (
+      <UncontrolledDropdown nav inNavbar>
+        <DropdownToggle nav caret>
+          Operatiuni
+        </DropdownToggle>
+        <DropdownMenu right>
+          <DropdownItem tag={Link} to="/meters">
+            Contoare
+          </DropdownItem>
+        </DropdownMenu>
+      </UncontrolledDropdown>
+    );
+  }, [isAuthFlag]);
+
   const getManagingRoutes = useCallback(() => {
     if (!isAuthFlag) return null;
 
@@ -108,6 +125,7 @@ const NavigationBar = React.memo((props) => {
                 </NavLink>
               </NavItem>
             ) : null}
+            {getOperationsRoutes()}
             {getManagingRoutes()}
             {getAuthRoutes()}
           </Nav>

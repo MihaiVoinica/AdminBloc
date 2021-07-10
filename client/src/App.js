@@ -8,6 +8,10 @@ import Login from "./pages/Login";
 import ActivateUser from "./pages/ActivateUser";
 import Logout from "./pages/Logout";
 // managing
+import Meters from "./pages/Meters";
+import AddMeter from "./pages/AddMeter";
+import EditMeter from "./pages/EditMeter";
+// managing
 import Apartments from "./pages/Apartments";
 import AddApartment from "./pages/AddApartment";
 import EditApartment from "./pages/EditApartment";
@@ -43,6 +47,14 @@ const App = React.memo((props) => (
         component={ActivateUser}
       />
       <PrivateRoute exact path="/logout" component={Logout} />
+      {/* OPERATIONS ROUTES */}
+      <PrivateRoute exact path="/meters" component={Meters} />
+      <PrivateRoute exact path="/meters/add" component={AddMeter} />
+      <PrivateRoute
+        exact
+        path="/meters/edit/:apartmentId/:id"
+        component={EditMeter}
+      />
       {/* MANAGING ROUTES */}
       <PrivateRoute
         exact

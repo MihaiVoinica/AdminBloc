@@ -8,7 +8,7 @@ module.exports = function validateUpdateMeterInput(data) {
   if (Validator.isEmpty(String(data.id || ""))) {
     errors.id = "Id field is required";
   }
-  if (data.hasOwnProperty("name") && Validator.isEmpty(String(data.name))) {
+  if (Validator.isEmpty(String(data.name))) {
     errors.name = "Name field is required";
   }
   if (

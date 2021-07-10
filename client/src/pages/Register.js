@@ -28,8 +28,6 @@ const Register = React.memo((props) => {
     name: "",
     email: "",
     role: "",
-    password: "",
-    password2: "",
   });
   const [errors, setErrors] = useState({});
   const history = useHistory();
@@ -68,9 +66,9 @@ const Register = React.memo((props) => {
         .catch((err) => {
           const { response = {} } = err;
           const { data = {} } = response;
-          const { name, email, password, password2 } = data;
+          const { name, email } = data;
           setLoading(false);
-          setErrors({ name, email, password, password2 });
+          setErrors({ name, email });
         });
     },
     [history, fields]
@@ -134,7 +132,7 @@ const Register = React.memo((props) => {
                 />
                 <FormFeedback>{errors["email"]}</FormFeedback>
               </FormGroup>
-              {isSuperAdmin ? (
+              {isSuperAdmin && !apartmentId ? (
                 <FormGroup>
                   <Label for="role">Rol</Label>
                   <Input

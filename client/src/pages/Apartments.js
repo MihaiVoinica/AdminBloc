@@ -1,7 +1,7 @@
 // Packages
 import React, { useCallback, useEffect, useState } from "react";
 import { useHistory, Link } from "react-router-dom";
-import { Container, Row, Col, Table, Button } from "reactstrap";
+import { Container, Row, Col, Table, Spinner, Button } from "reactstrap";
 import { toast } from "react-toastify";
 import axios from "axios";
 // Utils
@@ -49,7 +49,7 @@ const Apartments = React.memo((props) => {
         .then((res) => {
           const { data = {} } = res;
           const { name = "" } = data;
-          toast.success(`Apartamentul [${name}] a fost sters cu succes!`);
+          toast.success(`Apartamentul [${name}] a fost sters cu succes`);
           const newApartments = [...apartments].filter(({ _id }) => _id !== id);
           setApartments(newApartments);
         })
@@ -143,7 +143,7 @@ const Apartments = React.memo((props) => {
       <Row className="mt-5">
         <Col className="d-flex justify-content-between align-items-center">
           <span className="">
-            <h3>Apartamente</h3>
+            <h3>Apartamente ({apartments.length})</h3>
           </span>
           <span>
             <Button
@@ -178,7 +178,17 @@ const Apartments = React.memo((props) => {
                 <th className="text-center">Stergere</th>
               </tr>
             </thead>
-            <tbody>{getRows()}</tbody>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={13} className="text-center">
+                    <Spinner style={{ width: "3rem", height: "3rem" }} />
+                  </td>
+                </tr>
+              ) : (
+                getRows()
+              )}
+            </tbody>
           </Table>
         </Col>
       </Row>

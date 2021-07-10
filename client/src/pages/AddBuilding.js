@@ -65,7 +65,7 @@ const AddBuilding = React.memo((props) => {
         .then((res) => {
           const { data = {} } = res;
           const { name = "" } = data;
-          toast.success(`Blocul [${name}] a fost adaugat cu succes!`);
+          toast.success(`Blocul [${name}] a fost adaugat cu succes`);
           history.push(rootPathname);
         })
         .catch((err) => {

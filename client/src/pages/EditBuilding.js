@@ -1,5 +1,11 @@
 // Packages
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+} from "react";
 import { useHistory, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
@@ -23,6 +29,7 @@ import "./EditBuilding.css";
 const EditBuilding = React.memo((props) => {
   const { id: buildingId } = useParams();
   const rootPathname = useMemo(() => "/buildings", []);
+  const promisesFlag = useRef(2);
   const [loading, setLoading] = useState(true);
   const [admins, setAdmins] = useState([]);
   const [fields, setFields] = useState({
@@ -35,8 +42,6 @@ const EditBuilding = React.memo((props) => {
   const history = useHistory();
 
   useEffect(() => {
-    let promisesFlag = 2;
-
     if (userHasAccess([userRoles.SUPERADMIN])) {
       axios
         .get(`/auth/get-admins`, getRequestHeaders())
@@ -44,8 +49,7 @@ const EditBuilding = React.memo((props) => {
           const { data = {} } = res;
           setAdmins(data);
 
-          promisesFlag--;
-          if (!promisesFlag) {
+          if (!--promisesFlag.current) {
             setLoading(false);
           }
         })
@@ -55,6 +59,10 @@ const EditBuilding = React.memo((props) => {
           const { msg } = data;
           toast.error(`Error: ${msg}!`);
         });
+    } else {
+      if (!--promisesFlag.current) {
+        setLoading(false);
+      }
     }
 
     axios
@@ -64,8 +72,7 @@ const EditBuilding = React.memo((props) => {
         const { userId, name, address, apartmentsCount } = data;
         setFields({ userId, name, address, apartmentsCount });
 
-        promisesFlag--;
-        if (!promisesFlag) {
+        if (!--promisesFlag.current) {
           setLoading(false);
         }
       })
@@ -90,11 +97,11 @@ const EditBuilding = React.memo((props) => {
           const { data = {} } = res;
 
           if (!data) {
-            toast.warning(`Blocul nu a putut fi modificat, incercati din nou!`);
+            toast.warning(`Blocul nu a putut fi modificat, incercati din nou`);
             setLoading(false);
           } else {
             const { name = "" } = data;
-            toast.success(`Blocul [${name}] a fost modificat cu succes!`);
+            toast.success(`Blocul [${name}] a fost modificat cu succes`);
             history.push(rootPathname);
           }
         })
