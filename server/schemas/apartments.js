@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { MeterSchema } = require("./common");
+const { MeterSchema, BillSchema } = require("./common");
 
 const ObjectId = mongoose.Types.ObjectId;
 const Schema = mongoose.Schema;
@@ -50,8 +50,12 @@ const ApartmentSchema = new Schema(
       type: [MeterSchema],
       default: [],
     },
-    monthlyBills: {
-      type: [Number],
+    bills: {
+      type: [BillSchema],
+      default: [],
+    },
+    pastBills: {
+      type: [BillSchema],
       default: [],
     },
     payments: {

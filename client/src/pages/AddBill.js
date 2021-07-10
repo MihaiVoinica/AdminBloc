@@ -16,29 +16,29 @@ import {
 } from "reactstrap";
 import axios from "axios";
 // Utils
-import { getRequestHeaders } from "../utils";
+import { getRequestHeaders, billTypes, billLabels } from "../utils";
 // Styling
-import "./AddMeter.css";
+import "./AddBill.css";
 
-const AddMeter = React.memo((props) => {
-  const rootPathname = useMemo(() => "/meters", []);
+const AddBill = React.memo((props) => {
+  const rootPathname = useMemo(() => "/bills", []);
   const [loading, setLoading] = useState(true);
-  const [fields, setFields] = useState({ apartmentId: "", name: "" });
+  const [fields, setFields] = useState({
+    buildingId: "",
+    type: "",
+    name: "",
+    value: "",
+  });
   const [errors, setErrors] = useState({});
-  const [apartments, setApartments] = useState([]);
+  const [buildings, setBuildings] = useState([]);
   const history = useHistory();
 
   useEffect(() => {
     axios
-      .get(`/apartments/list`, getRequestHeaders())
+      .get(`/buildings/list`, getRequestHeaders())
       .then((res) => {
         const { data = [] } = res;
-        setApartments(
-          data.map(({ _id, name, buildingName }) => ({
-            _id,
-            name: `[${buildingName}] ${name}`,
-          }))
-        );
+        setBuildings(data.map(({ _id, name }) => ({ _id, name })));
         setLoading(false);
       })
       .catch((err) => {
@@ -52,20 +52,20 @@ const AddMeter = React.memo((props) => {
   const onSubmit = useCallback(
     (event) => {
       event.preventDefault();
-
       setErrors({});
 
-      const { apartmentId, ...fieldsData } = fields;
+      const { buildingId, ...fieldsData } = fields;
 
-      if (!apartmentId) {
-        setErrors({ apartmentId: "ApartmentId field is required" });
+      if (!buildingId) {
+        setErrors({ buildingId: "BuildingId field is required" });
         return;
       }
+
       setLoading(true);
 
       axios
         .patch(
-          `/apartments/create-meter/${apartmentId}`,
+          `/buildings/create-bill/${buildingId}`,
           fieldsData,
           getRequestHeaders()
         )
@@ -74,16 +74,16 @@ const AddMeter = React.memo((props) => {
           // TODO: use this name
           const { name = "" } = data;
           toast.success(
-            `Contorul [${fieldsData.name}] a fost adaugat cu succes`
+            `Factura [${fieldsData.name}] a fost adaugata cu succes`
           );
           history.push(rootPathname);
         })
         .catch((err) => {
           const { response = {} } = err;
           const { data = {} } = response;
-          const { name } = data;
+          const { type, name, value } = data;
           setLoading(false);
-          setErrors({ name });
+          setErrors({ type, name, value });
         });
     },
     [history, fields, rootPathname]
@@ -104,29 +104,69 @@ const AddMeter = React.memo((props) => {
       <Row>
         <Col sm="12" md={{ size: 8, offset: 2 }} lg={{ size: 6, offset: 3 }}>
           <Card className="p-5 bg-light shadow-sm">
-            <h2 className="mx-auto">Adaugare Contor</h2>
+            <h2 className="mx-auto">Adaugare Factura</h2>
             <Form>
-              {apartments.length ? (
+              {buildings.length ? (
                 <FormGroup>
-                  <Label for="apartmentId">Apartament:</Label>
+                  <Label for="buildingId">Bloc:</Label>
                   <Input
                     type="select"
-                    name="apartmentId"
-                    id="apartmentId"
-                    invalid={Boolean(errors["apartmentId"])}
-                    value={fields["apartmentId"]}
+                    name="buildingId"
+                    id="buildingId"
+                    invalid={Boolean(errors["buildingId"])}
+                    value={fields["buildingId"]}
                     onChange={onInputChange}
                   >
-                    <option value="">Alegeti un apartament</option>
-                    {apartments.map(({ _id, name }, id) => (
-                      <option key={`apartments-row-${id}`} value={_id}>
+                    <option value="">Alegeti un bloc</option>
+                    {buildings.map(({ _id, name }, id) => (
+                      <option key={`buildings-row-${id}`} value={_id}>
                         {name}
                       </option>
                     ))}
                   </Input>
-                  <FormFeedback>{errors["apartmentId"]}</FormFeedback>
+                  <FormFeedback>{errors["buildingId"]}</FormFeedback>
                 </FormGroup>
               ) : null}
+              <FormGroup>
+                <Label for="buildingId">Bloc:</Label>
+                <Input
+                  type="select"
+                  name="type"
+                  id="type"
+                  invalid={Boolean(errors["type"])}
+                  value={fields["type"]}
+                  onChange={onInputChange}
+                >
+                  <option value="">Alegeti un tip de factura</option>
+                  <option value={billTypes.PeopleCount}>
+                    {billLabels[billTypes.PeopleCount]}
+                  </option>
+                  <option value={billTypes.Share}>
+                    {billLabels[billTypes.Share]}
+                  </option>
+                  <option value={billTypes.Consumption}>
+                    {billLabels[billTypes.Consumption]}
+                  </option>
+                  <option value={billTypes.Radiant}>
+                    {billLabels[billTypes.Radiant]}
+                  </option>
+                </Input>
+                <FormFeedback>{errors["type"]}</FormFeedback>
+              </FormGroup>
+              <FormGroup>
+                <Label for="value">Valoare (RON)</Label>
+                <Input
+                  id="value"
+                  name="value"
+                  type="number"
+                  step={0.01}
+                  min={0}
+                  invalid={Boolean(errors["value"])}
+                  value={fields["value"]}
+                  onChange={onInputChange}
+                />
+                <FormFeedback>{errors["value"]}</FormFeedback>
+              </FormGroup>
               <FormGroup>
                 <Label for="name">Nume</Label>
                 <Input
@@ -165,4 +205,4 @@ const AddMeter = React.memo((props) => {
   );
 });
 
-export default AddMeter;
+export default AddBill;

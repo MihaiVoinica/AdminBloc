@@ -56,6 +56,9 @@ const NavigationBar = React.memo((props) => {
           Operatiuni
         </DropdownToggle>
         <DropdownMenu right>
+          <DropdownItem tag={Link} to="/bills">
+            Facturi
+          </DropdownItem>
           <DropdownItem tag={Link} to="/meters">
             Contoare
           </DropdownItem>
@@ -109,6 +112,24 @@ const NavigationBar = React.memo((props) => {
     );
   }, [isAuthFlag]);
 
+  const getGeneralRoutes = useCallback(() => {
+    if (!isAuthFlag) return null;
+    return (
+      <>
+        <NavItem>
+          <NavLink tag={Link} to="/documents">
+            Documente
+          </NavLink>
+        </NavItem>
+        <NavItem>
+          <NavLink tag={Link} to="/contact">
+            Contact
+          </NavLink>
+        </NavItem>
+      </>
+    );
+  }, [isAuthFlag]);
+
   return (
     <div>
       <Navbar color="dark" dark expand="md">
@@ -127,6 +148,7 @@ const NavigationBar = React.memo((props) => {
             ) : null}
             {getOperationsRoutes()}
             {getManagingRoutes()}
+            {getGeneralRoutes()}
             {getAuthRoutes()}
           </Nav>
         </Collapse>

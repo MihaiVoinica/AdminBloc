@@ -74,7 +74,13 @@ const Meters = React.memo((props) => {
       .get(`/apartments/list`, getRequestHeaders())
       .then((res) => {
         const { data = [] } = res;
-        setApartments(data.map(({ _id, name }) => ({ _id, name })));
+        setApartments(
+          data.map(({ _id, name, buildingId, buildingName }) => ({
+            _id,
+            buildingId,
+            name: `[${buildingName}] ${name}`,
+          }))
+        );
 
         if (!--promisesFlag.current) {
           setLoading(false);
@@ -121,7 +127,7 @@ const Meters = React.memo((props) => {
   );
 
   const onRemoveClick = useCallback(
-    (apartmentId, id) => {
+    (apartmentId, id, meterName) => {
       setLoading(true);
 
       axios
@@ -132,8 +138,9 @@ const Meters = React.memo((props) => {
         )
         .then((res) => {
           const { data = {} } = res;
+          // TODO: use this name
           const { name = "" } = data;
-          toast.success(`Contorul [${name}] a fost sters cu succes`);
+          toast.success(`Contorul [${meterName}] a fost sters cu succes`);
           const newMeters = [...meters].filter(({ _id }) => _id !== id);
           setMeters(newMeters);
         })
@@ -166,7 +173,7 @@ const Meters = React.memo((props) => {
           },
           id
         ) => (
-          <tr key={`buildings-row-${id}`}>
+          <tr key={`meters-row-${id}`}>
             <td>{buildingName}</td>
             <td>{apartmentName}</td>
             <td>{name}</td>
@@ -189,7 +196,7 @@ const Meters = React.memo((props) => {
                   disabled={loading}
                   color="danger"
                   size="sm"
-                  onClick={onRemoveClick.bind(null, apartmentId, _id)}
+                  onClick={onRemoveClick.bind(null, apartmentId, _id, name)}
                 >
                   S
                 </Button>
@@ -198,7 +205,7 @@ const Meters = React.memo((props) => {
           </tr>
         )
       ),
-    [meters, loading]
+    [meters, loading, canDeleteFlag]
   );
 
   const onInputChange = useCallback((event) => {
@@ -261,11 +268,20 @@ const Meters = React.memo((props) => {
                       onChange={onInputChange}
                     >
                       <option value="">Alegeti un apartament</option>
-                      {apartments.map(({ _id, name }, id) => (
-                        <option key={`filter-apartments-row-${id}`} value={_id}>
-                          {name}
-                        </option>
-                      ))}
+                      {apartments
+                        .filter(
+                          ({ buildingId }) =>
+                            !filters.buildingId ||
+                            filters.buildingId === buildingId
+                        )
+                        .map(({ _id, name }, id) => (
+                          <option
+                            key={`filter-apartments-row-${id}`}
+                            value={_id}
+                          >
+                            {name}
+                          </option>
+                        ))}
                     </Input>
                   </Col>
                 ) : null}

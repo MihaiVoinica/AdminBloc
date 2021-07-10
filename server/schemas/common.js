@@ -11,7 +11,12 @@ const BillSchema = new Schema(
     type: {
       type: String,
       required: true,
-      enum: ["individual", "split", "weighted"],
+      enum: [
+        "splitOnPeopleCount",
+        "splinOnShare",
+        "splinOnConsumption",
+        "splinOnRadiant",
+      ],
     },
     value: {
       type: Number,

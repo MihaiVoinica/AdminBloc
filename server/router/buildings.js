@@ -331,22 +331,102 @@ router.patch("/remove/:buildingId", checkToken, async (req, res) => {
   }
 });
 
+// @route GET /buildings/list-bills
+// @desc
+// @access Private [SUPERADMIN, ADMIN]
+router.get("/list-bills", checkToken, async (req, res) => {
+  const userAccess = [SUPERADMIN, ADMIN];
+  const requestingUser = req.user || {};
+  const requestingUserId = requestingUser.id;
+  const requestingUserRole = requestingUser.role;
+  const requestingUserEmail = requestingUser.email;
+  const data = req.query;
+
+  // Check requesting user role
+  if (
+    !requestingUserId ||
+    !requestingUserRole ||
+    !requestingUserEmail ||
+    !userAccess.includes(requestingUserRole)
+  ) {
+    return res.status(403).json({ msg: "User doesn't have enough rights" });
+  }
+
+  const { buildingId } = data;
+
+  try {
+    let buildings = null;
+    if (requestingUserRole === ADMIN) {
+      buildings = await Buildings.find(
+        Object.assign(
+          {
+            userId: requestingUserId,
+            active: true,
+          },
+          buildingId && { _id: buildingId }
+        )
+      );
+    } else {
+      buildings = await Buildings.find(
+        Object.assign(
+          {
+            active: true,
+          },
+          buildingId && { _id: buildingId }
+        )
+      );
+    }
+
+    if (!buildings) {
+      return res.status(400).json({ msg: "Invalid Buildings" });
+    }
+
+    const bills = [];
+
+    buildings.forEach((building) => {
+      const {
+        _id: currentBuildingId,
+        name: buildingName,
+        bills: buildingBills,
+      } = building;
+
+      buildingBills.forEach((bill) => {
+        if (bill.active) {
+          bills.push({
+            ...bill.toObject(),
+            buildingId: currentBuildingId,
+            buildingName,
+          });
+        }
+      });
+    });
+
+    res.status(200).json(bills);
+  } catch (e) {
+    console.log("[/buildings/list-bills] ERROR:", e);
+    res.status(500).json(e);
+  }
+});
+
 // @route PATCH /buildings/create-bill/:buildingId
 // @desc
 // @access Private [SUPERADMIN, ADMIN]
 router.patch("/create-bill/:buildingId", checkToken, async (req, res) => {
   const userAccess = [SUPERADMIN, ADMIN];
-  const requestingUserRole = (req.user || {}).role;
   const { buildingId } = req.params;
+  const requestingUser = req.user || {};
+  const requestingUserId = requestingUser.id;
+  const requestingUserRole = requestingUser.role;
+  const requestingUserEmail = requestingUser.email;
   const data = req.body;
 
-  // Check required params
-  if (!buildingId) {
-    return res.status(400).json({ msg: "BuildingId is required" });
-  }
-
   // Check requesting user role
-  if (!requestingUserRole || !userAccess.includes(requestingUserRole)) {
+  if (
+    !requestingUserId ||
+    !requestingUserRole ||
+    !requestingUserEmail ||
+    !userAccess.includes(requestingUserRole)
+  ) {
     return res.status(403).json({ msg: "User doesn't have enough rights" });
   }
 
@@ -361,11 +441,20 @@ router.patch("/create-bill/:buildingId", checkToken, async (req, res) => {
   const { name, type, value } = data;
 
   try {
-    const building = await Buildings.findOneAndUpdate(
-      { _id: buildingId, active: true },
-      { $push: { bills: { name, type, value } } },
-      { new: true }
-    );
+    let building = null;
+    if (requestingUserRole === ADMIN) {
+      building = await Buildings.findOneAndUpdate(
+        { _id: buildingId, userId: requestingUserId, active: true },
+        { $push: { bills: { name, type, value } } },
+        { new: true }
+      );
+    } else {
+      building = await Buildings.findOneAndUpdate(
+        { _id: buildingId, active: true },
+        { $push: { bills: { name, type, value } } },
+        { new: true }
+      );
+    }
 
     if (!building) {
       return res.status(400).json({ msg: "Invalid Building" });
@@ -386,11 +475,6 @@ router.patch("/remove-bill/:buildingId", checkToken, async (req, res) => {
   const requestingUserRole = (req.user || {}).role;
   const { buildingId } = req.params;
   const data = req.body;
-
-  // Check required params
-  if (!buildingId) {
-    return res.status(400).json({ msg: "BuildingId is required" });
-  }
 
   // Check requesting user role
   if (!requestingUserRole || !userAccess.includes(requestingUserRole)) {

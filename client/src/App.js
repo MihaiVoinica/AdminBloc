@@ -7,10 +7,14 @@ import { ToastContainer } from "react-toastify";
 import Login from "./pages/Login";
 import ActivateUser from "./pages/ActivateUser";
 import Logout from "./pages/Logout";
-// managing
+// operations
 import Meters from "./pages/Meters";
 import AddMeter from "./pages/AddMeter";
 import EditMeter from "./pages/EditMeter";
+import Bills from "./pages/Bills";
+import AddBill from "./pages/AddBill";
+import EditBill from "./pages/EditBill";
+import PastBills from "./pages/PastBills";
 // managing
 import Apartments from "./pages/Apartments";
 import AddApartment from "./pages/AddApartment";
@@ -19,6 +23,11 @@ import Buildings from "./pages/Buildings";
 import AddBuilding from "./pages/AddBuilding";
 import EditBuilding from "./pages/EditBuilding";
 import Register from "./pages/Register";
+// general
+import Documents from "./pages/Documents";
+import AddDocument from "./pages/AddDocument";
+import EditDocument from "./pages/EditDocument";
+import Contact from "./pages/Contact";
 // home
 import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
@@ -55,6 +64,14 @@ const App = React.memo((props) => (
         path="/meters/edit/:apartmentId/:id"
         component={EditMeter}
       />
+      <PrivateRoute exact path="/bills" component={Bills} />
+      <PrivateRoute exact path="/bills/add" component={AddBill} />
+      <PrivateRoute
+        exact
+        path="/bills/edit/:buildingId/:id"
+        component={EditBill}
+      />
+      <PrivateRoute exact path="/past-bills" component={PastBills} />
       {/* MANAGING ROUTES */}
       <PrivateRoute
         exact
@@ -104,6 +121,15 @@ const App = React.memo((props) => (
         component={Register}
         accessRoles={accessRoles["/register"]}
       />
+      {/* GENERAL ROUTES */}
+      <PrivateRoute exact path="/documents" component={Documents} />
+      <PrivateRoute exact path="/documents/add" component={AddDocument} />
+      <PrivateRoute
+        exact
+        path="/documents/edit/:buildingId/:id"
+        component={EditDocument}
+      />
+      <PrivateRoute exact path="/contact" component={Contact} />
       {/* HOME ROUTE */}
       <FallbackRoute exact path="/" component={Dashboard} fallback={Landing} />
       {/* NOT FOUND ROUTE */}

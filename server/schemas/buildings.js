@@ -29,6 +29,10 @@ const BuildingSchema = new Schema(
       type: [BillSchema],
       default: [],
     },
+    pastBills: {
+      type: [BillSchema],
+      default: [],
+    },
     pastUserIds: {
       // the user that owns the apartment
       type: [ObjectId],

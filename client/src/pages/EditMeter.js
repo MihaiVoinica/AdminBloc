@@ -61,18 +61,21 @@ const EditMeter = React.memo((props) => {
       setLoading(true);
       setErrors({});
 
-      const { apartmentId, ...data } = fields;
+      const { apartmentId, ...fieldsData } = fields;
 
       axios
         .patch(
           `/apartments/update-meter/${apartmentId}`,
-          { ...data, id: meterId },
+          { ...fieldsData, id: meterId },
           getRequestHeaders()
         )
         .then((res) => {
           const { data = {} } = res;
+          // TODO: use this name
           const { name = "" } = data;
-          toast.success(`Contorul [${name}] a fost adaugat cu succes`);
+          toast.success(
+            `Contorul [${fieldsData.name}] a fost adaugat cu succes`
+          );
           history.push(rootPathname);
         })
         .catch((err) => {

@@ -564,6 +564,116 @@ router.patch("/remove-owner/:apartmentId", checkToken, async (req, res) => {
   }
 });
 
+// @route GET /apartments/list-bills
+// @desc
+// @access Private [SUPERADMIN, ADMIN, NORMAL]
+router.get("/list-bills", checkToken, async (req, res) => {
+  const userAccess = [SUPERADMIN, ADMIN, NORMAL];
+  const requestingUser = req.user || {};
+  const requestingUserId = requestingUser.id;
+  const requestingUserRole = requestingUser.role;
+  const requestingUserEmail = requestingUser.email;
+  const data = req.query;
+
+  // Check requesting user role
+  if (
+    !requestingUserId ||
+    !requestingUserRole ||
+    !requestingUserEmail ||
+    !userAccess.includes(requestingUserRole)
+  ) {
+    return res.status(403).json({ msg: "User doesn't have enough rights" });
+  }
+
+  const { apartmentId } = data;
+
+  try {
+    let apartments = null;
+    if (requestingUserRole === NORMAL) {
+      apartments = await Apartments.find(
+        Object.assign(
+          {
+            userId: requestingUserId,
+            active: true,
+          },
+          apartmentId && {
+            _id: apartmentId,
+          }
+        )
+      );
+    } else if (requestingUserRole === ADMIN) {
+      const buildingsIds = (
+        await Buildings.find({
+          userId: requestingUserId,
+          active: true,
+        })
+      ).map((_id) => _id);
+
+      apartments = await Apartments.find(
+        Object.assign(
+          {
+            buildingId: { $in: buildingsIds },
+            active: true,
+          },
+          apartmentId && {
+            _id: apartmentId,
+          }
+        )
+      );
+    } else {
+      apartments = await Apartments.find(
+        Object.assign(
+          {
+            active: true,
+          },
+          apartmentId && {
+            _id: apartmentId,
+          }
+        )
+      );
+    }
+
+    const buildingsHash = {};
+    const buildingsIds = apartments.map(({ buildingId }) => buildingId);
+    const buildings = await Buildings.find({
+      _id: { $in: buildingsIds },
+      active: true,
+    });
+
+    buildings.forEach(({ _id, name }) => {
+      buildingsHash[_id] = name;
+    });
+
+    const bills = [];
+
+    apartments.forEach((apartment) => {
+      const {
+        _id: apartmentId,
+        name: apartmentName,
+        bills: apartmentBills,
+      } = apartment;
+      const buildingName = buildingsHash[apartment.buildingId];
+
+      apartmentBills.forEach((bill) => {
+        if (bill.active) {
+          bills.push({
+            ...bill.toObject(),
+            apartmentId,
+            apartmentName,
+            buildingId: apartment.buildingId,
+            buildingName,
+          });
+        }
+      });
+    });
+
+    res.status(200).json(bills);
+  } catch (e) {
+    console.log("[/apartments/list-bills] ERROR:", e);
+    res.status(500).json(e);
+  }
+});
+
 // @route GET /apartments/list-meters
 // @desc
 // @access Private [SUPERADMIN, ADMIN, NORMAL]
@@ -623,7 +733,6 @@ router.get("/list-meters", checkToken, async (req, res) => {
             buildingId: { $in: buildingsIds },
             active: true,
           },
-          buildingId && { buildingId },
           apartmentId && {
             _id: apartmentId,
           }
@@ -644,24 +753,12 @@ router.get("/list-meters", checkToken, async (req, res) => {
     }
 
     const buildingsHash = {};
-    const buildingsIds = [];
-    const usersHash = {};
-    const usersIds = [];
+    const buildingsIds = apartments.map(({ buildingId }) => buildingId);
+    const buildings = await Buildings.find({
+      _id: { $in: buildingsIds },
+      active: true,
+    });
 
-    apartments.forEach(({ buildingId, userId }) => {
-      buildingsIds.push(buildingId);
-      usersIds.push(userId);
-    });
-    const [users, buildings] = await Promise.all([
-      Users.find({ _id: { $in: usersIds }, role: NORMAL, active: true }),
-      Buildings.find({
-        _id: { $in: buildingsIds },
-        active: true,
-      }),
-    ]);
-    users.forEach(({ _id, email }) => {
-      usersHash[_id] = email;
-    });
     buildings.forEach(({ _id, name }) => {
       buildingsHash[_id] = name;
     });
@@ -694,6 +791,7 @@ router.get("/list-meters", checkToken, async (req, res) => {
     res.status(500).json(e);
   }
 });
+
 // @route GET /apartments/get-meter/:apartmentId
 // @desc
 // @access Private [SUPERADMIN, ADMIN, NORMAL]
