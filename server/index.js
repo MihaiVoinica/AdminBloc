@@ -80,6 +80,7 @@ mongoose.set("useFindAndModify", false);
 app.use("/apartments", router.apartments);
 app.use("/auth", router.auth);
 app.use("/buildings", router.buildings);
+app.use("/files", router.files);
 
 // Server init
 app.listen(serverConfig.PORT, () => {

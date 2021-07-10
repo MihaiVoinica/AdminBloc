@@ -1,6 +1,5 @@
 // Packages
-import React, { useEffect } from "react";
-// Utils
+import React from "react";
 // Styling
 import "./EditBill.css";
 

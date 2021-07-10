@@ -56,7 +56,7 @@ router.get("/list", checkToken, async (req, res) => {
           userId: requestingUserId,
           active: true,
         })
-      ).map((_id) => _id);
+      ).map(({ _id }) => _id);
 
       apartments = await Apartments.find({
         buildingId: { $in: buildingsIds },

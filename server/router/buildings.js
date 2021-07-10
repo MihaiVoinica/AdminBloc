@@ -18,7 +18,7 @@ const {
 const { Users, Buildings, Apartments } = require("../schemas");
 
 // roles
-const { ADMIN, SUPERADMIN } = usersConfig.ROLES;
+const { NORMAL, ADMIN, SUPERADMIN } = usersConfig.ROLES;
 
 // @route GET /buildings/get
 // @desc
@@ -77,9 +77,9 @@ router.get("/get", checkToken, async (req, res) => {
 
 // @route GET /buildings/list
 // @desc
-// @access Private [SUPERADMIN, ADMIN]
+// @access Private [SUPERADMIN, ADMIN, NORMAL]
 router.get("/list", checkToken, async (req, res) => {
-  const userAccess = [SUPERADMIN, ADMIN];
+  const userAccess = [SUPERADMIN, ADMIN, NORMAL];
   const requestingUser = req.user || {};
   const requestingUserId = requestingUser.id;
   const requestingUserRole = requestingUser.role;
@@ -96,12 +96,29 @@ router.get("/list", checkToken, async (req, res) => {
   }
 
   try {
-    if (requestingUserRole === ADMIN) {
+    if (requestingUserRole === NORMAL) {
+      const buildingsIdsSet = new Set(
+        (
+          await Apartments.find({
+            userId: requestingUserId,
+            active: true,
+          })
+        ).map(({ buildingId }) => buildingId)
+      );
+      const buildings = await Buildings.find({
+        _id: { $in: [...buildingsIdsSet] },
+        userId: requestingUserId,
+        active: true,
+      });
+      return res
+        .status(200)
+        .json(buildings.map(({ _id, name }) => ({ _id, name })));
+    } else if (requestingUserRole === ADMIN) {
       const buildings = await Buildings.find({
         userId: requestingUserId,
         active: true,
       });
-      res.status(200).json(
+      return res.status(200).json(
         buildings.map((building) => ({
           ...building.toObject(),
           userEmail: requestingUserEmail,
@@ -120,7 +137,7 @@ router.get("/list", checkToken, async (req, res) => {
         usersHash[_id] = email;
       });
 
-      res.status(200).json(
+      return res.status(200).json(
         buildings.map((building) => ({
           ...building.toObject(),
           userEmail: building.userId ? usersHash[building.userId] || "" : "",

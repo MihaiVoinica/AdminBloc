@@ -65,11 +65,17 @@ const App = React.memo((props) => (
         component={EditMeter}
       />
       <PrivateRoute exact path="/bills" component={Bills} />
-      <PrivateRoute exact path="/bills/add" component={AddBill} />
+      <PrivateRoute
+        exact
+        path="/bills/add"
+        component={AddBill}
+        accessRoles={accessRoles["/bills"]}
+      />
       <PrivateRoute
         exact
         path="/bills/edit/:buildingId/:id"
         component={EditBill}
+        accessRoles={accessRoles["/bills"]}
       />
       <PrivateRoute exact path="/past-bills" component={PastBills} />
       {/* MANAGING ROUTES */}
@@ -123,11 +129,17 @@ const App = React.memo((props) => (
       />
       {/* GENERAL ROUTES */}
       <PrivateRoute exact path="/documents" component={Documents} />
-      <PrivateRoute exact path="/documents/add" component={AddDocument} />
+      <PrivateRoute
+        exact
+        path="/documents/add"
+        component={AddDocument}
+        accessRoles={accessRoles["/documents"]}
+      />
       <PrivateRoute
         exact
         path="/documents/edit/:buildingId/:id"
         component={EditDocument}
+        accessRoles={accessRoles["/documents"]}
       />
       <PrivateRoute exact path="/contact" component={Contact} />
       {/* HOME ROUTE */}

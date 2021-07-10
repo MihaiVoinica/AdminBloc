@@ -44,6 +44,8 @@ const Apartments = React.memo((props) => {
 
   const onRemoveClick = useCallback(
     (id) => {
+      setLoading(true);
+
       axios
         .patch(`apartments/remove/${id}`, {}, getRequestHeaders())
         .then((res) => {

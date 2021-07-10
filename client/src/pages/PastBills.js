@@ -1,11 +1,11 @@
 // Packages
-import React, { useEffect } from "react";
+import React from "react";
 // Utils
 // Styling
-import "./AddBill.css";
+import "./PastBills.css";
 
-const AddBill = React.memo((props) => {
+const PastBills = React.memo((props) => {
   return <div />;
 });
 
-export default AddBill;
+export default PastBills;

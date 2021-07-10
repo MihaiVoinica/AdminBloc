@@ -4,3 +4,6 @@
 
 /database/*
 !/database/.gitkeep 
+
+/server/uploads/*
+!/server/uploads/.gitkeep 

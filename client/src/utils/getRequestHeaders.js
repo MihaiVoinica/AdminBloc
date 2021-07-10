@@ -1,13 +1,25 @@
 import getUserToken from "./getUserToken";
 
-export default function getRequestHeaders(params) {
+export default function getRequestHeaders(data) {
+  const { requestHasFilesFlag, requestDownloadFilesFlag, ...params } =
+    data || {};
+
   return Object.assign(
     {
-      headers: {
-        "X-Auth-Token": getUserToken(),
-        "Content-Type": "application/json",
-      },
+      headers: Object.assign(
+        {
+          "X-Auth-Token": getUserToken(),
+        },
+        requestHasFilesFlag
+          ? {
+              "Content-Type": "multipart/form-data",
+            }
+          : {
+              "Content-Type": "application/json",
+            }
+      ),
     },
-    params && { params }
+    data && { params },
+    requestDownloadFilesFlag && { responseType: "arraybuffer" }
   );
 }
