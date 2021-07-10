@@ -40,7 +40,7 @@ const EditMeter = React.memo((props) => {
         `/apartments/get-meter/${apartmentId}`,
         getRequestHeaders({ id: meterId })
       )
-      .then((res, err) => {
+      .then((res) => {
         const { data = {} } = res;
         const { name, prevValue, value, consumption } = data;
         setFields({ apartmentId, name, prevValue, value, consumption });
@@ -51,8 +51,7 @@ const EditMeter = React.memo((props) => {
         const { data = {} } = response;
         const { msg } = data;
         toast.error(`Error: ${msg}!`);
-      })
-      .finally(console.log);
+      });
   }, []);
 
   const onSubmit = useCallback(
