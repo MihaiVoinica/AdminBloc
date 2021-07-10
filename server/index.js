@@ -81,6 +81,7 @@ app.use("/apartments", router.apartments);
 app.use("/auth", router.auth);
 app.use("/buildings", router.buildings);
 app.use("/files", router.files);
+app.use("/tickets", router.tickets);
 
 // Server init
 app.listen(serverConfig.PORT, () => {

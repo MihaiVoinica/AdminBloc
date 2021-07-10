@@ -6,4 +6,5 @@ export default {
   "/buildings": [userRoles.SUPERADMIN, userRoles.ADMIN],
   "/bills": [userRoles.SUPERADMIN, userRoles.ADMIN],
   "/documents": [userRoles.SUPERADMIN, userRoles.ADMIN],
+  "/contact": [userRoles.NORMAL],
 };

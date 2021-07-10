@@ -16,11 +16,6 @@ const TicketSchema = new Schema(
       required: true,
       ref: "apartments",
     },
-    buildingId: {
-      type: ObjectId,
-      required: true,
-      ref: "buildings",
-    },
     name: {
       type: String,
       required: true,
@@ -33,6 +28,7 @@ const TicketSchema = new Schema(
       type: String,
       required: true,
       enum: ["created", "confirmed", "resolved"],
+      default: "created",
     },
     active: {
       type: Boolean,

@@ -43,6 +43,8 @@ const Buildings = React.memo((props) => {
 
   const onRemoveClick = useCallback(
     (id) => {
+      setLoading(true);
+
       axios
         .patch(`buildings/remove/${id}`, {}, getRequestHeaders())
         .then((res) => {

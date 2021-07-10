@@ -28,6 +28,7 @@ import Documents from "./pages/Documents";
 import AddDocument from "./pages/AddDocument";
 import EditDocument from "./pages/EditDocument";
 import Contact from "./pages/Contact";
+import AddTicket from "./pages/AddTicket";
 // home
 import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
@@ -142,6 +143,12 @@ const App = React.memo((props) => (
         accessRoles={accessRoles["/documents"]}
       />
       <PrivateRoute exact path="/contact" component={Contact} />
+      <PrivateRoute
+        exact
+        path="/contact/add"
+        component={AddTicket}
+        accessRoles={accessRoles["/contact"]}
+      />
       {/* HOME ROUTE */}
       <FallbackRoute exact path="/" component={Dashboard} fallback={Landing} />
       {/* NOT FOUND ROUTE */}
