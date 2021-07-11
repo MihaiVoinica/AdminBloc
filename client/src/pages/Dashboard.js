@@ -110,6 +110,7 @@ const Dashboard = React.memo((props) => {
             <td>{thermalProvider ? "Da" : "Nu"}</td>
             <td>{remainingCost} RON</td>
             <td>{currentCost} RON</td>
+            <td>{remainingCost + currentCost} RON</td>
           </tr>
         )
       ),
@@ -183,7 +184,8 @@ const Dashboard = React.memo((props) => {
                 <th>Cota</th>
                 <th style={{ minWidth: "105px" }}>Apa calda</th>
                 <th>Restante</th>
-                <th>Total</th>
+                <th>Cost Actual</th>
+                <th>Cost Total</th>
               </tr>
             </thead>
             <tbody>

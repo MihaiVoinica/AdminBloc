@@ -13,9 +13,9 @@ const BillSchema = new Schema(
       required: true,
       enum: [
         "splitOnPeopleCount",
-        "splinOnShare",
-        "splinOnConsumption",
-        "splinOnRadiant",
+        "splitOnShare",
+        "splitOnConsumption",
+        "splitOnRadiant",
       ],
     },
     value: {

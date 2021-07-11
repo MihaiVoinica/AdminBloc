@@ -128,7 +128,7 @@ const AddBill = React.memo((props) => {
                 </FormGroup>
               ) : null}
               <FormGroup>
-                <Label for="buildingId">Bloc:</Label>
+                <Label for="type">Tip factura:</Label>
                 <Input
                   type="select"
                   name="type"

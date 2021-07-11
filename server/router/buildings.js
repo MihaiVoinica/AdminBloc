@@ -16,6 +16,7 @@ const {
 
 // schemas
 const { Users, Buildings, Apartments } = require("../schemas");
+const { SUPER_ADMIN_DEFAULTS } = require("../config/secrets");
 
 // roles
 const { NORMAL, ADMIN, SUPERADMIN } = usersConfig.ROLES;
@@ -535,6 +536,149 @@ router.patch("/remove-bill/:buildingId", checkToken, async (req, res) => {
     res.status(200).json(newBuildings);
   } catch (e) {
     console.log("[/buildings/remove-bill/:buildingId] ERROR:", e);
+    res.status(500).json(e);
+  }
+});
+
+// @route PATCH /buildings/generate-bills/:buildingId
+// @desc
+// @access Private [SUPERADMIN, ADMIN]
+router.patch("/generate-bills/:buildingId", checkToken, async (req, res) => {
+  const userAccess = [SUPERADMIN, ADMIN];
+  const requestingUserRole = (req.user || {}).role;
+  const { buildingId } = req.params;
+
+  // Check requesting user role
+  if (!requestingUserRole || !userAccess.includes(requestingUserRole)) {
+    return res.status(403).json({ msg: "User doesn't have enough rights" });
+  }
+
+  try {
+    const costs = {};
+    const building = await Buildings.findOne({ _id: buildingId, active: true });
+    const apartments = await Apartments.find({ buildingId, active: true });
+    const totalPeopleCount = apartments.reduce(
+      (acc, { peopleCount }) => acc + peopleCount,
+      0
+    );
+    const totalRadArea = apartments.reduce(
+      (acc, { radiantArea, thermalProvider }) =>
+        thermalProvider ? acc : acc + radiantArea,
+      0
+    );
+    const totalConsumption = apartments.reduce(
+      (acc, { meters }) =>
+        acc + meters.reduce((accM, { consumption }) => accM + consumption, 0),
+      0
+    );
+    const bills = building.bills.filter(({ active }) => active);
+
+    bills.forEach((bill) => {
+      const { name, type, value } = bill;
+      if (type === "splitOnShare") {
+        apartments.forEach((apartment) => {
+          const { _id: apartmentId, share } = apartment;
+          if (!costs[apartmentId]) costs[apartmentId] = [];
+          costs[apartmentId].push({
+            name,
+            type,
+            value: (value * share) / 100,
+          });
+        });
+      }
+      if (type === "splitOnPeopleCount") {
+        const valuePerUnit = totalPeopleCount ? value / totalPeopleCount : 0;
+
+        apartments.forEach((apartment) => {
+          const { _id: apartmentId, peopleCount } = apartment;
+          if (!costs[apartmentId]) costs[apartmentId] = [];
+          costs[apartmentId].push({
+            name,
+            type,
+            value: valuePerUnit * peopleCount,
+          });
+        });
+      }
+      if (type === "splitOnRadiant") {
+        const valuePerUnit = totalRadArea ? value / totalRadArea : 0;
+
+        apartments.forEach((apartment) => {
+          const { _id: apartmentId, radiantArea, thermalProvider } = apartment;
+          if (!costs[apartmentId]) costs[apartmentId] = [];
+          costs[apartmentId].push({
+            name,
+            type,
+            value: thermalProvider ? 0 : valuePerUnit * radiantArea,
+          });
+        });
+      }
+      if (type === "splitOnConsumption") {
+        const valuePerUnit = totalConsumption ? value / totalConsumption : 0;
+
+        apartments.forEach((apartment) => {
+          const { _id: apartmentId, meters } = apartment;
+          if (!costs[apartmentId]) costs[apartmentId] = [];
+
+          costs[apartmentId].push({
+            name,
+            type,
+            value:
+              valuePerUnit *
+              meters.reduce((acc, { consumption }) => acc + consumption, 0),
+          });
+        });
+      }
+    });
+
+    const promisesApartments = apartments.map(
+      ({
+        _id: apartmentId,
+        meters,
+        remainingCost,
+        currentCost,
+        bills: apartmentBills,
+      }) => {
+        console.log("apartment", apartmentId);
+        const newMeters = meters.map((meter) => ({
+          ...meter.toObject(),
+          prevValue: meter.value || meter.prevValue,
+          value: 0,
+          consumption: 0,
+        }));
+        return Apartments.findOneAndUpdate(
+          { _id: apartmentId, active: true },
+          {
+            $set: {
+              meters: newMeters,
+              bills: costs[apartmentId].filter(({ value }) => value),
+              currentCost: (costs[apartmentId] || []).reduce(
+                (acc, { value }) => acc + value,
+                0
+              ),
+              remainingCost: currentCost + remainingCost,
+            },
+            $push: { prevBills: apartmentBills },
+          },
+          { new: true }
+        );
+      }
+    );
+
+    const { bills: buildingBills } = building;
+    const promiseBuilding = Buildings.findOneAndUpdate(
+      { _id: buildingId, active: true },
+      { $set: { bills: [] }, $push: { prevBills: buildingBills } },
+      { new: true }
+    );
+
+    const result = await Promise.all([promiseBuilding, ...promisesApartments]);
+
+    // TODO: PAGINA PLATI (scade din total si adauga in payments un numar)
+    // TODO: PAGINA FACTURI ANTERIOARE
+
+    res.status(200).json(result);
+  } catch (e) {
+    console.log("[/buildings/generate-bills/:buildingId] ERROR:", e);
     res.status(500).json(e);
   }
 });

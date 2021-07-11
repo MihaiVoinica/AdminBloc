@@ -286,9 +286,9 @@ const EditApartment = React.memo((props) => {
                   id="share"
                   name="share"
                   type="number"
-                  step="0.001"
+                  step="0.01"
                   min={0}
-                  max={1}
+                  max={100}
                   invalid={Boolean(errors["share"])}
                   value={fields["share"]}
                   onChange={onInputChange}

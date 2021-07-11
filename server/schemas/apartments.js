@@ -39,7 +39,7 @@ const ApartmentSchema = new Schema(
       required: true,
     },
     share: {
-      type: Number,
+      type: Number, // 0 100
       required: true,
     },
     thermalProvider: {
